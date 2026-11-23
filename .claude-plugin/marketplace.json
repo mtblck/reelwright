@@ -1,0 +1,18 @@
+{
+  "name": "reelwright",
+  "owner": {
+    "name": "mtblck",
+    "url": "https://github.com/mtblck"
+  },
+  "metadata": {
+    "description": "reelwright: short promo videos for a project, from its repo and its brand, with a voiceover, music and sound."
+  },
+  "plugins": [
+    {
+      "name": "reelwright",
+      "source": "./",
+      "description": "Square, vertical and landscape promo videos with a Kokoro voiceover, word-timed reveals, a music bed written to length and sound effects, themed from brand-kit's brand.json.",
+      "category": "design"
+    }
+  ]
+}
