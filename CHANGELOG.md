@@ -11,6 +11,10 @@ version with the date and bumps `plugin.json` to match.
 
 ### Added
 
+- Looks: `"look"` in `story.json` re-skins the whole video without changing the story. `clean` is the default and
+  looks as before. `film` adds grain, a soft vignette, a little gate weave and flicker, and cuts with `splice`.
+  Film MP4s are about 3 times bigger; the GIF is rendered from a pass without the look's layers so it stays under
+  5 MB ([#42](https://github.com/mtblck/reelwright/pull/42)).
 - Cuts land on the music's beat, and the video ends on a bar line so the last chord meets the end card. Whole scenes
   move, so each phrase keeps its place against its reveal. `"beatSync": false` turns it off; a custom `music.file`
   opts in with `music.bpm` ([#39](https://github.com/mtblck/reelwright/pull/39)).

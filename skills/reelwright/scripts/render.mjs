@@ -74,7 +74,19 @@ if (first) {
   if (!args.includes('--no-gif')) {
     const gif = path.join(run, `${slug}.gif`);
     const w = first.fmt === 'landscape' ? 720 : 540;
-    ff('-i', first.out, '-filter_complex', `fps=12,scale=${w}:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=sierra2_4a:diff_mode=rectangle`, gif);
+    // A look with grain (anything but clean) makes a GIF 3 to 5 times too big: GIFs can't compress noise.
+    // Render its source again at half size, quiet (without the look's layers) and muted, and make the GIF from that.
+    let src = first.out;
+    if (props.look && props.look !== 'clean') {
+      const qp = path.join(run, '.props-quiet.json');
+      src = path.join(run, '.gif-source.mp4');
+      fs.writeFileSync(qp, JSON.stringify({...props, quiet: true}));
+      execFileSync('npx', ['remotion', 'render', bundle, first.fmt, src, `--props=${qp}`, '--scale=0.5', '--muted', '--log=error',
+        ...(env.BROWSER ? [`--browser-executable=${env.BROWSER}`] : [])], {cwd: env.TEMPLATE, stdio: ['ignore', 'inherit', 'inherit']});
+      fs.rmSync(qp);
+    }
+    ff('-i', src, '-filter_complex', `fps=12,scale=${w}:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128:stats_mode=diff[p];[b][p]paletteuse=dither=sierra2_4a:diff_mode=rectangle`, gif);
+    if (src !== first.out) fs.rmSync(src);
     console.log(`${gif}  (${(fs.statSync(gif).size / 1e6).toFixed(1)} MB)`);
   }
 }

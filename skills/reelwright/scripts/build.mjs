@@ -14,6 +14,7 @@ const PAUSE = 0.3; // between phrases inside a scene
 const GAP = 0.45; // after a scene's last phrase, before the next cut
 const TAIL = 1.4; // extra hold on the last scene
 const WAYS = ['cut', 'slide', 'fade', 'zoom', 'splice', 'push', 'mask']; // the keys of TRANSITIONS in template/src/transitions.tsx
+const LOOKS = {clean: {enter: 'slide'}, film: {enter: 'splice'}}; // names and default ways in of LOOKS in template/src/looks.tsx
 const MIN = {title: 2.2, statement: 2, screen: 3, features: 3, stat: 2.4, steps: 3, end: 2.6, kinetic: 1.2, reframe: 3};
 
 const SKILL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -27,6 +28,8 @@ const env = Object.fromEntries(
     .trim().split('\n').filter((l) => l.includes('=')).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]),
 );
 const story = JSON.parse(fs.readFileSync(path.join(run, 'story.json'), 'utf8'));
+const look = story.look ?? 'clean';
+if (!LOOKS[look]) throw new Error(`look "${look}" is not one of ${Object.keys(LOOKS).join(', ')}`);
 const pub = path.join(run, 'public');
 fs.mkdirSync(pub, {recursive: true});
 
@@ -153,7 +156,7 @@ story.scenes.forEach((s, i) => {
   }
   const {type, say, enter, bg, hold, ...props} = s;
   // enter is a name ("push") or a name with options ({"type": "push", "direction": "up"})
-  const {type: way = i === 0 ? 'cut' : 'slide', ...enterOpts} = typeof enter === 'object' && enter ? enter : {type: enter ?? undefined};
+  const {type: way = i === 0 ? 'cut' : LOOKS[look].enter, ...enterOpts} = typeof enter === 'object' && enter ? enter : {type: enter ?? undefined};
   if (!WAYS.includes(way)) throw new Error(`scene ${i + 1}: enter "${way}" is not one of ${WAYS.join(', ')}`);
   scenes.push({type, start: f(t), dur: f(len), enter: way, ...(Object.keys(enterOpts).length ? {enterOpts} : {}), bg: bg ?? 'paper', cues, props});
   t += len;
@@ -205,7 +208,7 @@ if (m) {
   music = {src, volume: m.volume};
 }
 
-const props = {brand, scenes, voice, music, speech, sfx, durationInFrames: total};
+const props = {brand, look, scenes, voice, music, speech, sfx, durationInFrames: total};
 fs.writeFileSync(path.join(run, 'props.json'), JSON.stringify(props, null, 1));
-console.log(`${total} frames = ${(total / FPS).toFixed(1)} s${music ? `, music ${m.file ? path.basename(music.src) : `${m.mood} bed`}` : ', no music'}${beat ? `, cuts on the beat at ${bpm} bpm` : ''}`);
+console.log(`${total} frames = ${(total / FPS).toFixed(1)} s, ${look} look${music ? `, music ${m.file ? path.basename(music.src) : `${m.mood} bed`}` : ', no music'}${beat ? `, cuts on the beat at ${bpm} bpm` : ''}`);
 for (const [i, s] of scenes.entries()) console.log(`  f${String(s.start).padStart(4)}-${String(s.start + s.dur).padStart(4)}  ${s.type.padEnd(9)} ${phrases[i].join(' | ')}`);
