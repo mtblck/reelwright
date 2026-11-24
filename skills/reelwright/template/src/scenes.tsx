@@ -86,7 +86,7 @@ export const Screen: React.FC<P> = ({scene, c}) => {
   );
   const bw = landscape ? 1080 * u : vertical ? 960 * u : 900 * u;
   const bh = landscape ? 680 * u : vertical ? 1000 * u : 600 * u;
-  const pw = (vertical ? 640 : landscape ? 410 : 400) * u;
+  const pw = (vertical ? 640 : landscape ? 410 : 380) * u;
   const device = phone ? (
     <div style={{width: pw, height: pw * 2.16, borderRadius: 64 * u, padding: 16 * u, background: '#0b0b0c', boxShadow: `0 ${30 * u}px ${80 * u}px ${mix(b.dark, '#000000', 0.5)}55`}}>
       <div style={{width: '100%', height: '100%', borderRadius: 50 * u, overflow: 'hidden', background: b.paper}}>{media}</div>
@@ -100,10 +100,12 @@ export const Screen: React.FC<P> = ({scene, c}) => {
       <div style={{flex: 1, overflow: 'hidden'}}>{media}</div>
     </div>
   );
-  const caption = <Words text={scene.props.caption} at={cue(scene) + 4} size={(landscape ? 76 : 72) * u} color={c.ink} accent={b.accent} align={landscape && phone ? 'left' : 'center'} />;
+  // A phone is too tall to stack under a caption in a square frame, so it sits beside it there too.
+  const side = phone && !vertical;
+  const caption = <Words text={scene.props.caption} at={cue(scene) + 4} size={(landscape ? 76 : 72) * u} color={c.ink} accent={b.accent} align={side ? 'left' : 'center'} />;
   const dev = <div style={{transform: `translateY(${(1 - p) * 160 * u}px) scale(${0.92 + 0.08 * p})`, opacity: Math.min(1, p * 2)}}>{device}</div>;
-  return landscape && phone ? (
-    <AbsoluteFill style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 100 * u, padding: 80 * u}}>
+  return side ? (
+    <AbsoluteFill style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: (landscape ? 100 : 70) * u, padding: 80 * u}}>
       <div style={{flex: 1, minWidth: 0, maxWidth: 900 * u}}>{caption}</div>
       {dev}
     </AbsoluteFill>
