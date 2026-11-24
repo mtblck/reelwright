@@ -19,7 +19,7 @@ export type Brand = {
 };
 
 export type Scene = {
-  type: 'title' | 'statement' | 'screen' | 'features' | 'stat' | 'steps' | 'end' | 'kinetic' | 'reframe' | 'terminal' | 'code' | 'zoom-pan';
+  type: 'title' | 'statement' | 'screen' | 'features' | 'stat' | 'steps' | 'end' | 'kinetic' | 'reframe' | 'terminal' | 'code' | 'zoom-pan' | 'before-after' | 'quote' | 'compare' | 'logo-wall' | 'diagram';
   start: number; // frame
   dur: number; // frames
   enter: string; // a key of TRANSITIONS in transitions.tsx: cut, slide, fade, zoom, splice, push

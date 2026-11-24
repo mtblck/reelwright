@@ -16,7 +16,7 @@ const TAIL = 1.4; // extra hold on the last scene
 const WAYS = ['cut', 'slide', 'fade', 'zoom', 'splice', 'push', 'mask', 'whip', 'glitch']; // the keys of TRANSITIONS in template/src/transitions.tsx
 // names and default ways in of LOOKS in template/src/looks.tsx; `mono` swaps the brand's fonts for a mono face, set smaller (it runs wider)
 const LOOKS = {clean: {enter: 'slide'}, film: {enter: 'splice'}, terminal: {enter: 'cut', mono: {family: 'JetBrains Mono', display: 800, text: 400, scale: 0.72}}};
-const MIN = {title: 2.2, statement: 2, screen: 3, features: 3, stat: 2.4, steps: 3, end: 2.6, kinetic: 1.2, reframe: 3, terminal: 3.5, code: 3.5, 'zoom-pan': 3.5};
+const MIN = {title: 2.2, statement: 2, screen: 3, features: 3, stat: 2.4, steps: 3, end: 2.6, kinetic: 1.2, reframe: 3, terminal: 3.5, code: 3.5, 'zoom-pan': 3.5, 'before-after': 3.5, quote: 3, compare: 3, 'logo-wall': 2.6, diagram: 3};
 
 const SKILL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const run = path.resolve(process.argv[2] ?? '');
@@ -186,8 +186,8 @@ for (const s of scenes) {
 }
 // a picture's or clip's size in pixels, so zoom-pan can cap its zoom and a cursor can find its targets
 const probe = (file) => { try { const [w, h] = execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', file], {encoding: 'utf8'}).trim().split(',').map(Number); return w && h ? [w, h] : undefined; } catch { return undefined; } };
-const local = (o) => { for (const k of ['image', 'video']) if (o[k] && !/^https?:/.test(o[k])) { const src = path.resolve(run, o[k]); o.mediaSize ??= probe(src); o[k] = copy(src, 'media'); } };
-for (const s of scenes) { local(s.props); (s.props.shapes ?? []).forEach(local); }
+const local = (o) => { for (const k of ['before', 'after', 'avatar']) if (o[k] && !/^https?:/.test(o[k])) o[k] = copy(path.resolve(run, o[k]), 'media'); for (const k of ['image', 'video']) if (o[k] && !/^https?:/.test(o[k])) { const src = path.resolve(run, o[k]); o.mediaSize ??= probe(src); o[k] = copy(src, 'media'); } };
+for (const s of scenes) { local(s.props); (s.props.shapes ?? []).forEach(local); (s.props.logos ?? []).forEach(local); }
 
 // one voice track, every clip at its place
 let voice = null;
