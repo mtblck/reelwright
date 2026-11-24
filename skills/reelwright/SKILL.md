@@ -17,7 +17,7 @@ A short video built from what the project really is: its own screens, its own br
 | `scripts/capture.mjs` | `node <skill>/scripts/capture.mjs <url> <run>/media [--device phone\|desktop] [--steps steps.json] [--clip]`: screenshots and a screen clip of the running app, driven by a list of steps. |
 | `scripts/term.mjs` | `node <skill>/scripts/term.mjs <run>/media/term.json [--cwd <dir>] [--show "cmd as typed"] -- <cmd> <args...>`: runs a command and records its real output (colours stripped, 40 lines at most) for a `terminal` scene's `transcript`. |
 | `scripts/build.mjs` | `node <skill>/scripts/build.mjs <run>`: reads `<run>/story.json`, voices each phrase, lays out the timeline, writes the voice track, fonts, sound effects and music into `<run>/public/` and `<run>/props.json`. Prints the timeline. |
-| `scripts/render.mjs` | `node <skill>/scripts/render.mjs <run> stills [--format square]` for a contact sheet; `node <skill>/scripts/render.mjs <run> [--formats square,vertical,landscape]` for the videos, GIF and poster. |
+| `scripts/render.mjs` | `node <skill>/scripts/render.mjs <run> stills [--format square]` for a contact sheet; `node <skill>/scripts/render.mjs <run> [--formats square,vertical,landscape]` for the videos, GIF and poster; `stills --format vertical --safe tiktok` (or `reels`, `shorts`) shades where the app's buttons cover; `loop` for a silent seamless loop; `--length 6` renders a short cut. |
 | `scripts/music.mjs` | Writes the music bed (called by `build.mjs`). Moods `bright`, `calm`, `tech`. |
 | `references/story.md` | The `story.json` schema, every scene type and its props, and the story templates. Read it before writing a story. |
 | `examples/inlay/` | A finished story for Inlay (an image tracer) with its brand and screen clip. Copy it to start. |
@@ -71,6 +71,8 @@ node <skill>/scripts/render.mjs <run> --formats square,vertical,landscape
 Square and vertical are the social cuts and come first; landscape is for the web. Each takes 40 to 60 seconds. Read the `qa-<format>.png` sheets (a frame a second).
 
 **Gate:** every MP4 exists at -14 LUFS, the QA sheets show every scene with nothing cut off, and `<name>.gif` is under 5 MB (else render the GIF from a shorter story or drop it).
+
+**Optional extras.** A 6 s bumper or 15 s ad: `build.mjs <run> --length 6` then `render.mjs <run> --length 6` (see Short cuts in the story reference). A loop for a README or landing page: `render.mjs <run> loop [--format landscape] [--seconds 5] [--scene n]` makes `<name>-loop.mp4`, `.webm` and `.gif` (under 5 MB), silent, from inside one scene (the longest middle one by default) with the end faded into the start so it never jumps. Before posting a vertical cut, `stills --format vertical --safe tiktok` shades where TikTok's buttons and caption sit (`reels`, `shorts` for the others): keep words out of the shading.
 
 ### 5. Deliver
 

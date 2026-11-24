@@ -1,5 +1,7 @@
 // story.json (+ brand.json) -> voice per phrase -> timeline -> <run>/props.json and <run>/public/*
-// Usage: node build.mjs <run_dir>
+// Usage: node build.mjs <run_dir> [--length 6|15]
+// --length builds a short cut of the same story by dropping scenes (see `keep` in story.md), into
+// <run>/props-<n>s.json beside the full one; render.mjs --length <n> renders it.
 // Reads <run>/story.json. Voice clips are cached in ~/.cache/reelwright/voice, so re-running after a
 // visual-only edit is instant; changing a line re-voices only that line.
 import {execFileSync} from 'node:child_process';
@@ -30,6 +32,19 @@ const env = Object.fromEntries(
     .trim().split('\n').filter((l) => l.includes('=')).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]),
 );
 const story = JSON.parse(fs.readFileSync(path.join(run, 'story.json'), 'utf8'));
+// a short cut: scenes whose `keep` is at least this length (6 keeps a scene in the 6 s and 15 s cuts, 15 only in
+// the 15 s one). With no `keep` anywhere: the first and last scenes, plus the title for 15 s.
+const length = process.argv.includes('--length') ? Number(process.argv[process.argv.indexOf('--length') + 1]) : 0;
+const suffix = length ? `-${length}s` : '';
+if (length) {
+  const all = story.scenes;
+  const hinted = all.some((s) => s.keep != null);
+  story.scenes = all.filter((s, i) => (hinted ? Number(s.keep) > 0 && Number(s.keep) <= length : i === 0 || i === all.length - 1 || (length >= 15 && s.type === 'title')));
+  if (story.scenes.at(-1) !== all.at(-1) && all.at(-1).type === 'end' && !story.scenes.includes(all.at(-1))) story.scenes.push(all.at(-1)); // always end on the card
+  if (!story.scenes.length) throw new Error(`no scenes to keep in a ${length} s cut`);
+  // the first scene opens on a cut; a stinger doesn't fit a bumper
+  story.scenes = story.scenes.map((s, i) => ({...s, ...(i === 0 ? {enter: 'cut'} : {}), ...(s.stinger && length < 15 ? {stinger: undefined} : {})}));
+}
 const look = story.look ?? 'clean';
 if (!LOOKS[look]) throw new Error(`look "${look}" is not one of ${Object.keys(LOOKS).join(', ')}`);
 const pub = path.join(run, 'public');
@@ -202,8 +217,8 @@ if (placed.length) {
   const ins = placed.flatMap(([file]) => ['-i', file]);
   const fc = placed.map(([, st], k) => `[${k}]aresample=48000,adelay=${Math.round(st * 1000)}:all=1[a${k}]`).join(';')
     + ';' + placed.map((_, k) => `[a${k}]`).join('') + `amix=inputs=${placed.length}:normalize=0,apad=whole_dur=${(total / FPS).toFixed(3)}[v]`;
-  execFileSync('ffmpeg', ['-v', 'error', '-y', ...ins, '-filter_complex', fc, '-map', '[v]', '-ac', '1', '-ar', '48000', path.join(pub, 'voice.wav')]);
-  voice = 'voice.wav';
+  execFileSync('ffmpeg', ['-v', 'error', '-y', ...ins, '-filter_complex', fc, '-map', '[v]', '-ac', '1', '-ar', '48000', path.join(pub, `voice${suffix}.wav`)]);
+  voice = `voice${suffix}.wav`;
 }
 
 // sound effects: a whoosh on moving cuts, ticks on list reveals, a click and chime on the end button
@@ -238,7 +253,7 @@ if (m) {
   if (m.file) src = copy(path.resolve(run, m.file), 'music');
   else {
     fs.mkdirSync(path.join(pub, 'music'), {recursive: true});
-    src = path.join('music', 'bed.wav');
+    src = path.join('music', `bed${suffix}.wav`);
     const extra = ['--mood', m.mood, ...(m.bpm ? ['--bpm', String(m.bpm)] : []), ...(m.key ? ['--key', m.key] : []), '--seed', String(m.seed ?? 7)];
     if (m.end === 'tapestop') extra.push('--stop', (until / FPS).toFixed(3));
     execFileSync('node', [path.join(SKILL, 'scripts/music.mjs'), path.join(pub, src), '--seconds', (until / FPS).toFixed(2), ...extra], {stdio: 'ignore'});
@@ -295,6 +310,7 @@ captionLines.forEach((c, k) => { const next = captionLines[k + 1]; c.to = Math.m
 const captions = story.captions === false ? null : {formats: story.captions === true ? ['vertical', 'square', 'landscape'] : Array.isArray(story.captions) ? story.captions : ['vertical', 'square'], lines: captionLines};
 
 const props = {brand, look, scenes, voice, music, speech, sfx, captions, durationInFrames: total};
-fs.writeFileSync(path.join(run, 'props.json'), JSON.stringify(props, null, 1));
-console.log(`${total} frames = ${(total / FPS).toFixed(1)} s, ${look} look${music ? `, music ${m.file ? path.basename(music.src) : `${m.mood} bed`}` : ', no music'}${beat ? `, cuts on the beat at ${bpm} bpm` : ''}`);
+fs.writeFileSync(path.join(run, `props${suffix}.json`), JSON.stringify(props, null, 1));
+if (length && total / FPS > length * 1.25) console.warn(`note: the ${length} s cut runs ${(total / FPS).toFixed(1)} s; mark fewer scenes with keep, or shorter ones`);
+console.log(`${suffix ? `${length} s cut: ` : ''}${total} frames = ${(total / FPS).toFixed(1)} s, ${look} look${music ? `, music ${m.file ? path.basename(music.src) : `${m.mood} bed`}` : ', no music'}${beat ? `, cuts on the beat at ${bpm} bpm` : ''}`);
 for (const [i, s] of scenes.entries()) console.log(`  f${String(s.start).padStart(4)}-${String(s.start + s.dur).padStart(4)}  ${s.type.padEnd(9)} ${phrases[i].join(' | ')}`);
