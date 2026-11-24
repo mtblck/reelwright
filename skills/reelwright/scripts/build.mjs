@@ -149,7 +149,7 @@ if (placed.length) {
   voice = 'voice.wav';
 }
 
-// sound effects: a whoosh on moving cuts, pops and ticks on reveals, a click on the end button
+// sound effects: a whoosh on moving cuts, ticks on list reveals, a click and chime on the end button
 const SFX = path.join(SKILL, 'assets/sfx');
 const sfx = [];
 const add = (name, at, volume) => {
@@ -159,11 +159,10 @@ const add = (name, at, volume) => {
 for (const s of scenes) {
   if (s.enter === 'slide' || s.enter === 'zoom' || s.enter === 'splice') add('whoosh', s.start - 4, 0.175);
   if (s.type === 'reframe') { s.cues.slice(1, (s.props.shapes ?? []).length).forEach((c) => add('whoosh', s.start + c - 3, 0.15)); if (s.cues.length > (s.props.shapes ?? []).length) add('rise', s.start + s.cues[(s.props.shapes ?? []).length] - 6, 0.4); }
-  if (s.type === 'title') add('pop', s.start + 2, 0.5);
   if (s.type === 'features') s.cues.slice(1).forEach((c) => add('tick', s.start + c, 0.45));
   if (s.type === 'steps') s.cues.slice(s.props.title ? 1 : 0).forEach((c) => add('tick', s.start + c, 0.45));
   if (s.type === 'stat') add('rise', s.start + s.cues[0], 0.4);
-  if (s.type === 'end') { add('pop', s.start + s.cues[0], 0.45); add('click', s.start + (s.cues[1] ?? s.cues[0]) + 7, 0.6); add('chime', s.start + (s.cues[1] ?? s.cues[0]) + 10, 0.4); }
+  if (s.type === 'end') { add('click', s.start + (s.cues[1] ?? s.cues[0]) + 7, 0.6); add('chime', s.start + (s.cues[1] ?? s.cues[0]) + 10, 0.4); }
 }
 
 // music: a bed written to the video's length by music.mjs (CC0), or a file the story names
