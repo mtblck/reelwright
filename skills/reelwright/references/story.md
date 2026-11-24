@@ -44,6 +44,8 @@ Each phrase in `say` starts the next reveal. Give a scene as many phrases as it 
 | `stat` | `value`* (`"1.3 s"`, `"12,000+"`, `"0"`), `label`* | 1: the number counts up; 2: the label |
 | `kinetic` | `words`* (one short line each, `*stars*` allowed), `colors` (per word: `dark`, `paper`, `brand`, `accent`; default the scene's `bg`), `stack` (keep earlier words, dimmed, and use the first colour) | 1, 2, 3...: each word slams in, replacing the last (or under it, with `stack`) |
 | `reframe` | `shapes`* (2 to 3 of `{aspect: "9:16" \| "1:1" \| "16:9", video \| image, label}`), `caption`, `assemble` (default true) | 1, 2, 3: the frame snaps to each shape with its clip and label; then one more: the frames' outlines meet on one centre (Reelwright's mark) and the caption types on |
+| `terminal` | `command`*, `output`* (lines, or one string with newlines; up to 14 shown), `highlight` (text in the output line to light), `prompt` (default `$`), `title` (default `Terminal`), `caption`, or `transcript` (a JSON file from `scripts/term.mjs`: a real run's `command` and `output`, which the story's own props override) | 1: the window rises and the command types on; 2: the output prints; 3: the highlighted line lights up and the rest dim |
+| `code` | `code`*, or `file` (a path from the run folder, read by build.mjs) with `lines` (`[from, to]`, 1-based; up to 14); `highlights` (`[[from, to], ...]` in file line numbers, one per phrase after the first), `title` (default the file name), `caption`. Lines starting `+ ` or `- ` show as a diff | 1: the window rises and the lines print; 2, 3...: each highlight in turn, the other lines dimmed |
 | `end` | `button`*, `url` (default brand url) | 1: mark, name and button; 2: the button is pressed and the URL appears |
 
 Screen captures: a phone clip from `capture.mjs --device phone --clip` fits the `phone` frame; a desktop screenshot fits `browser`. Videos play muted.
@@ -55,6 +57,8 @@ Screen captures: a phone clip from `capture.mjs --device phone --clip` fits the 
 **Feature demo** (20 to 25 s): `statement` the new thing (dark, kicker "New") → `screen` before or the old way → `screen` the feature (dark) → `end` "Try it".
 
 **Tool explainer** (20 to 30 s): `title` → `steps` input, what it does, output → `screen` the result (dark) → `end`.
+
+**Dev tool** (20 to 30 s, no app to film): `statement` the pain (dark) → `terminal` a real run, the line that matters highlighted → `code` the few lines that make it work (dark) → `stat` or `features` → `end`. Pairs with the `terminal` look.
 
 **Hype** (20 to 30 s): `kinetic` the hook (two words, the second on `accent`) → `title` (enter `splice`) → `screen` it at work → `kinetic` with `stack`, three one-word beats → `reframe` or `stat` → `end`.
 
