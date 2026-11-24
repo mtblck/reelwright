@@ -1,7 +1,7 @@
 """Voice every phrase with Kokoro (kokoro-onnx), one WAV per phrase, cached by text and voice.
 
 Usage: python voice.py <lines.json> <out_dir> <model.onnx> <voices.bin>
-lines.json: {"voice": "af_heart", "speed": 1.0, "lines": [{"id": "s0p0", "text": "..."}]}
+lines.json: {"voice": "af_heart", "speed": 1.0, "lines": [{"id": "s0p0", "text": "...", "speed"?: 1.1}]}
 Prints a JSON map {id: {"file": path, "seconds": float, "pauses": [[from, to], ...]}}: pauses are the
 silences inside the phrase (in seconds), which build.mjs uses to time the words for captions.
 """
@@ -39,11 +39,12 @@ def pauses(audio, sr, least=0.09):
 tts = None
 result = {}
 for line in spec["lines"]:
-    key = hashlib.sha1(json.dumps([line["text"], voice, speed]).encode()).hexdigest()[:12]
+    sp = float(line.get("speed", speed))  # a line can be quicker than the rest (kinetic accelerate)
+    key = hashlib.sha1(json.dumps([line["text"], voice, sp]).encode()).hexdigest()[:12]
     path = os.path.join(out, f"{key}.wav")
     if not os.path.exists(path):
         tts = tts or Kokoro(model, voices)
-        audio, sr = tts.create(line["text"], voice=voice, speed=speed, lang=lang)
+        audio, sr = tts.create(line["text"], voice=voice, speed=sp, lang=lang)
         # trim the model's leading and trailing near-silence so cues land on the first word
         loud = np.where(np.abs(audio) > 0.01)[0]
         if len(loud):

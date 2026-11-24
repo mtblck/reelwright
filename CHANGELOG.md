@@ -11,6 +11,13 @@ version with the date and bumps `plugin.json` to match.
 
 ### Added
 
+- Trailer moves: `accelerate` on `kinetic` makes each beat land quicker than the last, `stinger` on `end` adds a
+  last line after a beat of dark, and `"music": {"end": "tapestop"}` stops the bed like a tape instead of fading it.
+  The story templates now open cold, with the hook before the title.
+- Three music moods: `lofi` (swung, with tape crackle), `cinematic` (no kit; a low boom, an ostinato and a build)
+  and `minimal` (a kick, a held bass and a sparse arpeggio).
+- Sound effects, all synthesised and quiet: a sub drop under the `title`, a riser into a `reframe`, and a hit on a
+  stinger ([#49](https://github.com/mtblck/reelwright/pull/49)).
 - Proof scenes: `before-after` (a slider from one picture or clip to the other), `quote` (a real comment and who
   said it), `compare` (the old way and the new, row by row), `logo-wall` (what it works with, a group per phrase) and
   `diagram` (in, the tool, out, drawn box by box). The README scene grid shows all 18
