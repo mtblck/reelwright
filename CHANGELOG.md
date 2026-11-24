@@ -11,6 +11,10 @@ version with the date and bumps `plugin.json` to match.
 
 ### Added
 
+- Proof scenes: `before-after` (a slider from one picture or clip to the other), `quote` (a real comment and who
+  said it), `compare` (the old way and the new, row by row), `logo-wall` (what it works with, a group per phrase) and
+  `diagram` (in, the tool, out, drawn box by box). The README scene grid shows all 18
+  ([#48](https://github.com/mtblck/reelwright/pull/48)).
 - `zoom-pan` scene: a camera over one screenshot that eases to a new part of it on each phrase, never enlarging
   past the point where small text goes soft. A `cursor` on `zoom-pan` and `screen` glides to one target per
   phrase and clicks it with a ripple and a click sound ([#47](https://github.com/mtblck/reelwright/pull/47)).

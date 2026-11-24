@@ -6,6 +6,7 @@ import {OVERLAP, Transitioned} from './transitions';
 import {SCENES} from './scenes';
 import {DEV_SCENES} from './devscenes';
 import {PRODUCT_SCENES} from './product';
+import {PROOF_SCENES} from './proof';
 import {LookContext, lookOf} from './looks';
 import {Captions} from './captions';
 
@@ -27,7 +28,7 @@ export const Video: React.FC<Props> = (p) => {
       <AbsoluteFill style={{background: p.brand.paper}}>
         <Wrap>
         {p.scenes.map((s, i) => {
-          const Comp = ({...SCENES, ...DEV_SCENES, ...PRODUCT_SCENES} as any)[s.type];
+          const Comp = ({...SCENES, ...DEV_SCENES, ...PRODUCT_SCENES, ...PROOF_SCENES} as any)[s.type];
           const c = sceneColors(p.brand, s.bg);
           return (
             <Sequence key={i} from={s.start} durationInFrames={s.dur + (i < p.scenes.length - 1 ? OVERLAP : 0)} name={`${i + 1} ${s.type}`}>
