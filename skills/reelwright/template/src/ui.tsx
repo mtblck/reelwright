@@ -61,4 +61,10 @@ export const useFonts = (b: Brand) => {
   }, []);
 };
 
+// A font size times brand.typeScale (set by a look whose face runs wider, e.g. terminal's mono).
+// Video sets it once per frame before any scene renders, so sizes need no hook.
+let typeScale = 1;
+export const setTypeScale = (k = 1) => { typeScale = k; };
+export const ts = (px: number) => px * typeScale;
+
 export const font = (f: {family: string; weight: number}) => ({fontFamily: `"${f.family}", system-ui, sans-serif`, fontWeight: f.weight});

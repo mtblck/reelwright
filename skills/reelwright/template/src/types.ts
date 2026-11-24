@@ -13,6 +13,7 @@ export type Brand = {
   mark?: string; // square mark on paper (public path)
   markDark?: string; // square mark on dark
   radius?: number; // card corner radius at 1080 px
+  typeScale?: number; // every font size times this (a look whose face runs wider sets it)
   fontCss?: string; // public path of the saved Google Fonts CSS (build.mjs)
 };
 
