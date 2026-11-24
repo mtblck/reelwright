@@ -157,9 +157,9 @@ const add = (name, at, volume) => {
   sfx.push({src: copy(path.join(SFX, `${name}.wav`), 'sfx'), at: Math.max(0, at), volume});
 };
 for (const s of scenes) {
-  if (s.enter === 'slide' || s.enter === 'zoom' || s.enter === 'splice') add('whoosh', s.start - 4, 0.35);
-  if (s.type === 'kinetic') s.cues.forEach((c) => add('pop', s.start + c, 0.4));
-  if (s.type === 'reframe') { s.cues.slice(1, (s.props.shapes ?? []).length).forEach((c) => add('whoosh', s.start + c - 3, 0.3)); if (s.cues.length > (s.props.shapes ?? []).length) add('rise', s.start + s.cues[(s.props.shapes ?? []).length] - 6, 0.4); }
+  if (s.enter === 'slide' || s.enter === 'zoom' || s.enter === 'splice') add('whoosh', s.start - 4, 0.175);
+  if (s.type === 'kinetic') s.cues.forEach((c) => add('pop', s.start + c, 0.2));
+  if (s.type === 'reframe') { s.cues.slice(1, (s.props.shapes ?? []).length).forEach((c) => add('whoosh', s.start + c - 3, 0.15)); if (s.cues.length > (s.props.shapes ?? []).length) add('rise', s.start + s.cues[(s.props.shapes ?? []).length] - 6, 0.4); }
   if (s.type === 'title') add('pop', s.start + 2, 0.5);
   if (s.type === 'features') s.cues.slice(1).forEach((c) => add('tick', s.start + c, 0.45));
   if (s.type === 'steps') s.cues.slice(s.props.title ? 1 : 0).forEach((c) => add('tick', s.start + c, 0.45));
