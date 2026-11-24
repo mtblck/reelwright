@@ -4,7 +4,7 @@ import type {Props} from './types';
 import {BrandContext, asset, sceneColors, useFonts} from './ui';
 import {OVERLAP, Transitioned} from './transitions';
 import {SCENES} from './scenes';
-import {lookOf} from './looks';
+import {LookContext, lookOf} from './looks';
 
 export const Video: React.FC<Props> = (p) => {
   useFonts(p.brand);
@@ -19,6 +19,7 @@ export const Video: React.FC<Props> = (p) => {
   const Wrap = (!p.quiet && look.Wrap) || React.Fragment;
   return (
     <BrandContext.Provider value={p.brand}>
+      <LookContext.Provider value={look}>
       <AbsoluteFill style={{background: p.brand.paper}}>
         <Wrap>
         {p.scenes.map((s, i) => {
@@ -42,6 +43,7 @@ export const Video: React.FC<Props> = (p) => {
           </Sequence>
         ))}
       </AbsoluteFill>
+      </LookContext.Provider>
     </BrandContext.Provider>
   );
 };

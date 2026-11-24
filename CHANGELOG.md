@@ -11,6 +11,9 @@ version with the date and bumps `plugin.json` to match.
 
 ### Added
 
+- `terminal` look: JetBrains Mono in place of the brand's fonts, scanlines, and words that type on behind a block
+  cursor with a soft phosphor glow (in `statement`, `kinetic` and every caption), with hard cuts. For CLIs and dev
+  tools ([#43](https://github.com/mtblck/reelwright/pull/43)).
 - Looks: `"look"` in `story.json` re-skins the whole video without changing the story. `clean` is the default and
   looks as before. `film` adds grain, a soft vignette, a little gate weave and flicker, and cuts with `splice`.
   Film MP4s are about 3 times bigger; the GIF is rendered from a pass without the look's layers so it stays under

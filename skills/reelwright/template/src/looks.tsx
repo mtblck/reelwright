@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {createContext, useContext} from 'react';
 import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
 
 // A look re-skins the whole video without touching the story: a layer over every frame, a wrapper
@@ -10,6 +10,7 @@ export type Look = {
   enter: string; // default way in after the first scene (a key of TRANSITIONS)
   Wrap?: React.FC<{children: React.ReactNode}>; // round every scene, e.g. to move the whole picture
   Over?: React.FC; // drawn over everything, e.g. grain (left out of the GIF's pass)
+  text?: 'rise' | 'type'; // how words reveal: rise (default) or type on behind a cursor
 };
 
 // a repeatable 0..1 value for a frame and a channel, so a look draws the same on every render
@@ -51,9 +52,27 @@ const FilmOver: React.FC = () => {
   );
 };
 
+// terminal: scanlines and a dark edge, like a CRT. build.mjs sets the brand's fonts to a mono face, and
+// words type on behind a block cursor (Typed in scenes.tsx) with a soft phosphor glow.
+const TerminalOver: React.FC = () => {
+  const {width, height} = useVideoConfig();
+  const u = Math.min(width, height) / 1080;
+  const pitch = Math.max(3, Math.round(4 * u));
+  return (
+    <AbsoluteFill style={{pointerEvents: 'none'}}>
+      <AbsoluteFill style={{background: `repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${pitch - 1}px, rgba(0,0,0,0.13) ${pitch - 1}px, rgba(0,0,0,0.13) ${pitch}px)`}} />
+      <AbsoluteFill style={{background: 'radial-gradient(ellipse at center, rgba(0,0,0,0) 65%, rgba(0,0,0,0.18) 100%)'}} />
+    </AbsoluteFill>
+  );
+};
+
 export const LOOKS: Record<string, Look> = {
   clean: {enter: 'slide'},
   film: {enter: 'splice', Wrap: FilmWrap, Over: FilmOver},
+  terminal: {enter: 'cut', Over: TerminalOver, text: 'type'},
 };
+
+export const LookContext = createContext<Look>({enter: 'slide'});
+export const useLook = () => useContext(LookContext);
 
 export const lookOf = (name?: string) => LOOKS[name ?? 'clean'] ?? LOOKS.clean;

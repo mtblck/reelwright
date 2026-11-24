@@ -2,15 +2,61 @@ import React from 'react';
 import {AbsoluteFill, Img, OffthreadVideo, interpolate, useCurrentFrame} from 'remotion';
 import type {Scene} from './types';
 import {Emph, asset, font, mix, rise, sceneColors, useBrand, useFade, useLayout, usePop} from './ui';
+import {useLook} from './looks';
 
 type C = ReturnType<typeof sceneColors>;
 type P = {scene: Scene; c: C};
 const cue = (s: Scene, i = 0) => s.cues[Math.min(i, s.cues.length - 1)] ?? 0;
 
-// Big words, a word at a time from the phrase's cue.
+// Text that types on from a frame, a character at a time behind a block cursor that blinks for a
+// second after the last character, then goes. Characters not yet typed hold their place (invisible),
+// so lines never reflow as they type. *stars* still set words in the accent.
+const CPS = 40; // characters a second
+export const Typed: React.FC<{text: string; at: number; color: string; accent: string}> = ({text, at, color, accent}) => {
+  const frame = useCurrentFrame();
+  const parts = text.split(/(\*[^*]+\*)/).filter(Boolean).map((t) => (t.startsWith('*') && t.endsWith('*') ? {t: t.slice(1, -1), hot: true} : {t, hot: false}));
+  const total = parts.reduce((n, p) => n + p.t.length, 0);
+  const shown = Math.max(0, Math.floor(((frame - at) / 30) * CPS));
+  const done = at + Math.ceil((total / CPS) * 30);
+  const cursorOn = frame >= at && frame < done + 30 && (frame < done || Math.floor((frame - done) / 8) % 2 === 0);
+  // the cursor sits after the last typed character, but before any spaces just typed, so it never
+  // hangs off the end of a line that is about to wrap
+  const flat = parts.map((p) => p.t).join('');
+  let at2 = Math.min(shown, total);
+  while (at2 > 0 && flat[at2 - 1] === ' ' && at2 < total) at2--;
+  let k = 0;
+  const glow = (c: string) => `0 0 0.14em ${c}66`;
+  const out: React.ReactNode[] = [];
+  parts.forEach((p, i) => {
+    const col = p.hot ? accent : color;
+    const vis = Math.max(0, Math.min(p.t.length, shown - k));
+    // the cursor belongs to the part it follows (so it stays on the line of the character before it)
+    const c = cursorOn && ((at2 > k && at2 <= k + p.t.length) || (at2 === 0 && i === 0)) ? at2 - k : -1;
+    const cut = c >= 0 ? c : vis;
+    // the last typed character and the cursor stay together (no line break between them)
+    const tail = c > 0 ? 1 : 0;
+    out.push(<span key={`v${i}`} style={{color: col, textShadow: glow(col)}}>{p.t.slice(0, cut - tail)}</span>);
+    if (c >= 0) out.push(<span key="c" style={{color: col, textShadow: glow(col), whiteSpace: 'nowrap'}}>{p.t.slice(cut - tail, cut)}<Cursor color={col} /></span>);
+    if (vis > cut) out.push(<span key={`s${i}`} style={{color: col}}>{p.t.slice(cut, vis)}</span>);
+    out.push(<span key={`h${i}`} style={{opacity: 0}}>{p.t.slice(vis)}</span>);
+    k += p.t.length;
+  });
+  return <>{out}</>;
+};
+// a block cursor that takes no room, so it never pushes the line along
+const Cursor: React.FC<{color: string}> = ({color}) => (
+  <span style={{position: 'relative', display: 'inline-block', width: 0, height: '1em', verticalAlign: 'text-bottom'}}>
+    <span style={{position: 'absolute', left: '0.04em', top: '0.05em', width: '0.55em', height: '0.95em', background: color, boxShadow: `0 0 0.2em ${color}88`}} />
+  </span>
+);
+
+// Big words, a word at a time from the phrase's cue (or typed on, under a look that types).
 const Words: React.FC<{text: string; at: number; size: number; color: string; accent: string; align?: 'left' | 'center'; step?: number}> = ({text, at, size, color, accent, align = 'center', step = 3}) => {
   const b = useBrand();
   const frame = useCurrentFrame();
+  const look = useLook();
+  if (look.text === 'type')
+    return <div style={{...font(b.display), fontSize: size, lineHeight: 1.12, letterSpacing: -0.01 * size, textAlign: align, textWrap: 'balance' as any}}><Typed text={text} at={at} color={color} accent={accent} /></div>;
   const words = text.split(' ');
   let star = false;
   return (
@@ -227,6 +273,7 @@ export const End: React.FC<P> = ({scene, c}) => {
 // With stack, earlier words stay (dimmed) and the new one lands under them; without it each word replaces the last.
 export const Kinetic: React.FC<P> = ({scene, c}) => {
   const b = useBrand();
+  const look = useLook();
   const {u, vertical} = useLayout();
   const frame = useCurrentFrame();
   const words: string[] = scene.props.words ?? [];
@@ -238,22 +285,24 @@ export const Kinetic: React.FC<P> = ({scene, c}) => {
     accent: {bg: b.accent, ink: b.dark, hot: b.paper},
   };
   const col = pal[scene.props.colors?.[scene.props.stack ? 0 : n] ?? scene.bg] ?? pal.dark;
-  const size = (vertical ? 210 : 190) * u;
+  const size = (vertical ? 210 : 190) * u * (look.text === 'type' ? 0.8 : 1); // a mono face runs wider
   const slam = (i: number) => {
     const p = usePop(cue(scene, i), 11);
     return {transform: `scale(${1.35 - 0.35 * p})`, opacity: Math.min(1, p * 2.2), filter: `blur(${Math.max(0, (1 - p) * 10 * u)}px)`};
   };
   const style = (i: number) => ({...font(b.display), fontSize: size, lineHeight: 0.98, letterSpacing: -0.035 * size, color: col.ink, textAlign: 'center' as const, textWrap: 'balance' as any});
   const pops = words.map((_, i) => slam(i));
-  const flash = n === 0 && !scene.props.flashFirst ? 0 : interpolate(frame - cue(scene, n), [0, 5], [0.35, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
+  const flash = (n === 0 && !scene.props.flashFirst) || look.text === 'type' ? 0 : interpolate(frame - cue(scene, n), [0, 5], [0.35, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
   return (
     <AbsoluteFill style={{background: col.bg, alignItems: 'center', justifyContent: 'center', padding: 80 * u}}>
       {scene.props.stack ? (
         <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 * u}}>
-          {words.map((w, i) => (frame >= cue(scene, i) ? <div key={i} style={{...style(i), ...pops[i], opacity: (pops[i].opacity as number) * (i < n ? 0.38 : 1)}}><Emph text={w} color={col.hot} /></div> : null))}
+          {words.map((w, i) => (frame >= cue(scene, i) ? <div key={i} style={{...style(i), ...(look.text === 'type' ? {} : pops[i]), opacity: (look.text === 'type' ? 1 : (pops[i].opacity as number)) * (i < n ? 0.38 : 1)}}>{look.text === 'type' ? <Typed text={w} at={cue(scene, i)} color={col.ink} accent={col.hot} /> : <Emph text={w} color={col.hot} />}</div> : null))}
         </div>
       ) : (
-        <div key={n} style={{...style(n), ...pops[n]}}><Emph text={words[n] ?? ''} color={col.hot} /></div>
+        look.text === 'type'
+          ? <div key={n} style={style(n)}><Typed text={words[n] ?? ''} at={cue(scene, n)} color={col.ink} accent={col.hot} /></div>
+          : <div key={n} style={{...style(n), ...pops[n]}}><Emph text={words[n] ?? ''} color={col.hot} /></div>
       )}
       <AbsoluteFill style={{background: col.hot, opacity: flash, pointerEvents: 'none'}} />
     </AbsoluteFill>

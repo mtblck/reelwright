@@ -14,7 +14,8 @@ const PAUSE = 0.3; // between phrases inside a scene
 const GAP = 0.45; // after a scene's last phrase, before the next cut
 const TAIL = 1.4; // extra hold on the last scene
 const WAYS = ['cut', 'slide', 'fade', 'zoom', 'splice', 'push', 'mask']; // the keys of TRANSITIONS in template/src/transitions.tsx
-const LOOKS = {clean: {enter: 'slide'}, film: {enter: 'splice'}}; // names and default ways in of LOOKS in template/src/looks.tsx
+// names and default ways in of LOOKS in template/src/looks.tsx; `mono` swaps the brand's fonts for a mono face
+const LOOKS = {clean: {enter: 'slide'}, film: {enter: 'splice'}, terminal: {enter: 'cut', mono: {family: 'JetBrains Mono', display: 800, text: 400}}};
 const MIN = {title: 2.2, statement: 2, screen: 3, features: 3, stat: 2.4, steps: 3, end: 2.6, kinetic: 1.2, reframe: 3};
 
 const SKILL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -69,6 +70,8 @@ function copy(src, sub) {
   return rel;
 }
 const brand = loadBrand();
+const mono = LOOKS[look].mono;
+if (mono) { brand.display = {family: mono.family, weight: mono.display}; brand.text = {family: mono.family, weight: mono.text}; }
 
 // --- fonts: fetched once with curl into the cache and served from public/fonts, so the render
 // needs no network and no trust in whatever proxy sits in front of it ---
