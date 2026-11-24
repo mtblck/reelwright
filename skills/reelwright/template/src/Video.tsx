@@ -19,6 +19,9 @@ export const Video: React.FC<Props> = (p) => {
     const near = p.speech.some(([s, e]) => f >= s - 6 && f <= e + 6);
     return near ? 0.33 : 1;
   };
+  // the music fades over its last 1.5 s, or stops dead where a tape stop ends it; either way it's silent after `until`
+  const until = p.music?.until ?? p.durationInFrames;
+  const musicEnd = (f: number) => (f >= until ? 0 : p.music?.stop ? 1 : interpolate(f, [until - 45, until], [1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}));
   const look = lookOf(p.look);
   // quiet: the GIF's pass, without the look's layers: GIFs can't compress grain, and dithering a vignette adds more noise (see render.mjs)
   const Wrap = (!p.quiet && look.Wrap) || React.Fragment;
@@ -42,7 +45,7 @@ export const Video: React.FC<Props> = (p) => {
         {p.captions && <Captions captions={p.captions} />}
         {look.Over && !p.quiet && <look.Over />}
         {p.voice && <Audio src={asset(p.voice)} />}
-        {p.music && <Audio src={asset(p.music.src)} volume={(f) => p.music!.volume * duck(f) * interpolate(f, [p.durationInFrames - 45, p.durationInFrames], [1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'})} />}
+        {p.music && <Audio src={asset(p.music.src)} volume={(f) => p.music!.volume * duck(f) * musicEnd(f)} />}
         {p.sfx.map((s, i) => (
           <Sequence key={`sfx${i}`} from={s.at} durationInFrames={90}>
             <Audio src={asset(s.src)} volume={s.volume ?? 0.5} />

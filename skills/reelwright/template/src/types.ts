@@ -40,7 +40,7 @@ export type Props = {
   quiet?: boolean; // set by render.mjs for the GIF: the look's Wrap and Over are left out
   scenes: Scene[];
   voice: string | null;
-  music: {src: string; volume: number} | null;
+  music: {src: string; volume: number; until?: number; stop?: boolean} | null; // until: the frame it ends on; stop: it ends on a tape stop
   speech: [number, number][]; // frames where the voice is speaking, for ducking
   sfx: Sfx[];
   captions?: Captions | null;

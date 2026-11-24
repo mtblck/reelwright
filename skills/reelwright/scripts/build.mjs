@@ -11,6 +11,7 @@ import {fileURLToPath} from 'node:url';
 const FPS = 30;
 const LEAD = 0.25; // seconds from a scene's cut to its first word
 const PAUSE = 0.3; // between phrases inside a scene
+const STING = 1.7; // seconds a stinger adds after the end card: 0.4 of dark, then the stinger
 const GAP = 0.45; // after a scene's last phrase, before the next cut
 const TAIL = 1.4; // extra hold on the last scene
 const WAYS = ['cut', 'slide', 'fade', 'zoom', 'splice', 'push', 'mask', 'whip', 'glitch']; // the keys of TRANSITIONS in template/src/transitions.tsx
@@ -109,7 +110,9 @@ const v = story.voice ?? {};
 const pron = v.pronounce ?? {};
 const spoken = (t) => Object.entries(pron).reduce((s, [a, b]) => s.replace(new RegExp(`\\b${a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi'), b), t.replace(/\*/g, ''));
 const phrases = story.scenes.map((s) => (Array.isArray(s.say) ? s.say : s.say ? [s.say] : []));
-const lines = phrases.flatMap((ps, i) => ps.map((t, j) => ({id: `s${i}p${j}`, text: spoken(t)})));
+// a kinetic scene with `accelerate` speaks each beat a little faster than the last
+const quick = (i, j) => (story.scenes[i].accelerate ? 1 + 0.08 * j : 1);
+const lines = phrases.flatMap((ps, i) => ps.map((t, j) => ({id: `s${i}p${j}`, text: spoken(t), ...(quick(i, j) > 1 ? {speed: (v.speed ?? 1) * quick(i, j)} : {})})));
 const voiceDir = path.join(path.dirname(env.KOKORO_MODEL), '..', 'voice');
 const spec = path.join(run, '.lines.json');
 fs.writeFileSync(spec, JSON.stringify({voice: v.voice ?? 'af_heart', speed: v.speed ?? 1, lines}));
@@ -124,7 +127,7 @@ fs.rmSync(spec);
 // to the nearest beat, or the one after when the nearest would clip the scene's last word or its minimum
 // length. Only whole scenes move, so each phrase keeps its place against its reveal.
 const m = story.music === false ? null : {mood: 'bright', volume: 0.22, ...story.music};
-const MOOD_BPM = {bright: 112, calm: 88, tech: 120}; // keep in step with MOODS in music.mjs
+const MOOD_BPM = {bright: 112, calm: 88, tech: 120, lofi: 80, cinematic: 72, minimal: 100}; // keep in step with MOODS in music.mjs
 const bpm = !m || story.beatSync === false ? 0 : m.file ? Number(m.bpm ?? 0) : Number(m.bpm ?? MOOD_BPM[m.mood] ?? 112);
 const beat = bpm ? 60 / bpm : 0;
 const SNAP_GAP = 0.2; // seconds a cut must stay clear of the scene's last word
@@ -143,7 +146,7 @@ story.scenes.forEach((s, i) => {
     placed.push([c.file, t + at]);
     speech.push([f(t + at), f(t + at + c.seconds)]);
     if (s.captions !== false) lines4captions.push({text: phrases[i][j], at: t + at, clip: c});
-    at += c.seconds + PAUSE;
+    at += c.seconds + (s.accelerate ? PAUSE * Math.pow(0.5, j) : PAUSE); // accelerate: each gap half the last
   });
   if (!cues.length) cues.push(f(0.2));
   const talkEnd = phrases[i].length ? at - PAUSE : 0; // end of the scene's last word
@@ -151,6 +154,8 @@ story.scenes.forEach((s, i) => {
   const min = (MIN[s.type] ?? 2) + (s.hold ?? 0);
   let len = phrases[i].length ? at - PAUSE + GAP : 2;
   len = Math.max(len, min) + (last ? TAIL : 0);
+  // a stinger after the end card: the card holds to its bar line, then a beat of dark and the stinger
+  const sting = last && s.type === 'end' && s.stinger ? STING : 0;
   if (beat && !last) {
     let end = Math.round((t + len) / beat) * beat;
     if (end - t < Math.max(talkEnd + SNAP_GAP, min)) end += beat;
@@ -161,7 +166,8 @@ story.scenes.forEach((s, i) => {
     if (end - t < Math.max(talkEnd + 1, min)) end += bar;
     len = end - t;
   }
-  const {type, say, enter, bg, hold, captions: _c, ...props} = s;
+  if (sting) { s.stingAt = f(len); len += sting; }
+  const {type, say, enter, bg, hold, captions: _c, accelerate: _a, ...props} = s;
   // enter is a name ("push") or a name with options ({"type": "push", "direction": "up"})
   const {type: way = i === 0 ? 'cut' : LOOKS[look].enter, ...enterOpts} = typeof enter === 'object' && enter ? enter : {type: enter ?? undefined};
   if (!WAYS.includes(way)) throw new Error(`scene ${i + 1}: enter "${way}" is not one of ${WAYS.join(', ')}`);
@@ -215,11 +221,17 @@ for (const s of scenes) {
   if (s.type === 'stat') add('rise', s.start + s.cues[0], 0.4);
   // a cursor clicks each target 20 frames after its phrase starts (CLICK_AT in product.tsx)
   (s.props.cursor ?? []).forEach((pt, k) => { if (pt && k < s.cues.length) add('click', s.start + s.cues[k] + 20, 0.5); });
+  // a sub drop under the title, a riser into a reframe (ending on its cut), a hit on a stinger
+  if (s.type === 'title') add('hit', s.start + s.cues[0], 0.15);
+  if (s.type === 'reframe') add('riser', s.start - 45, 0.15);
+  if (s.props.stingAt) add('hit', s.start + s.props.stingAt + 12, 0.15);
   if (s.type === 'end') { add('click', s.start + (s.cues[1] ?? s.cues[0]) + 7, 0.6); add('chime', s.start + (s.cues[1] ?? s.cues[0]) + 10, 0.4); }
 }
 
 // music: a bed written to the video's length by music.mjs (CC0), or a file the story names
 let music = null;
+const endScene = scenes.at(-1);
+const until = endScene.props.stingAt ? endScene.start + endScene.props.stingAt : total;
 if (m) {
   let src;
   if (m.file) src = copy(path.resolve(run, m.file), 'music');
@@ -227,9 +239,11 @@ if (m) {
     fs.mkdirSync(path.join(pub, 'music'), {recursive: true});
     src = path.join('music', 'bed.wav');
     const extra = ['--mood', m.mood, ...(m.bpm ? ['--bpm', String(m.bpm)] : []), ...(m.key ? ['--key', m.key] : []), '--seed', String(m.seed ?? 7)];
-    execFileSync('node', [path.join(SKILL, 'scripts/music.mjs'), path.join(pub, src), '--seconds', (total / FPS).toFixed(2), ...extra], {stdio: 'ignore'});
+    if (m.end === 'tapestop') extra.push('--stop', (until / FPS).toFixed(3));
+    execFileSync('node', [path.join(SKILL, 'scripts/music.mjs'), path.join(pub, src), '--seconds', (until / FPS).toFixed(2), ...extra], {stdio: 'ignore'});
   }
-  music = {src, volume: m.volume};
+  // until: the frame the music ends on (before a stinger); a tape stop ends it there instead of a fade
+  music = {src, volume: m.volume, until, ...(m.end === 'tapestop' && !m.file ? {stop: true} : {})};
 }
 
 // --- captions: word timings for each phrase, then short lines of a few words ---

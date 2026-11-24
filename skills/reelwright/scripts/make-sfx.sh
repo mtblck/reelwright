@@ -19,4 +19,8 @@ f "aevalsrc='(sin(2*PI*1046.5*t)+0.6*sin(2*PI*1568*t)+0.15*sin(2*PI*2093*t))*exp
 f "aevalsrc='sin(2*PI*(300*t+700*t*t))*min(1,t*6)*exp(-2.2*t)':d=0.7" "volume=0.5" rise
 # glitch: two stuttering bursts of crushed noise and buzz, 4 frames long, under a glitch cut
 f "aevalsrc='(gt(sin(2*PI*28*t),-0.3)*(random(0)*2-1)*0.7+0.35*sgn(sin(2*PI*196*t)))*exp(-9*t)':d=0.14" "acrusher=bits=5:mix=1,lowpass=f=6500,highpass=f=150,afade=t=out:st=0.1:d=0.04,volume=0.8" glitch
+# hit: a sub drop under a title reveal, a sine falling from 110 to 38 Hz with a soft thump on top
+f "aevalsrc='(sin(2*PI*(38*t+72*(1-exp(-4*t))/4))*exp(-2.6*t)*min(1,t*80)+(random(0)*2-1)*0.25*exp(-60*t))':d=1.3" "lowpass=f=900,volume=0.8" hit
+# riser: noise and a tone climbing for a second and a half, cut off at the top so it lands on the cut
+f "aevalsrc='((random(0)*2-1)*0.5+0.4*sin(2*PI*(200*t+260*t*t)))*pow(t/1.5,2.2)':d=1.5" "bandpass=f=2200:width_type=o:w=3,highpass=f=180,afade=t=out:st=1.47:d=0.03,volume=0.85" riser
 ls -la "$OUT"

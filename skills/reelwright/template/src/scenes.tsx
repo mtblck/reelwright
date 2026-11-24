@@ -260,7 +260,7 @@ const Step: React.FC<{n: number; text: string; at: number; c: C}> = ({n, text, a
   );
 };
 
-// end: mark, name, a button that gets pressed, the URL.  props: {button*, url?}
+// end: mark, name, a button that gets pressed, the URL.  props: {button*, url?, stinger? (one line after the card, a beat later)}
 export const End: React.FC<P> = ({scene, c}) => {
   const b = useBrand();
   const {u, vertical} = useLayout();
@@ -273,6 +273,16 @@ export const End: React.FC<P> = ({scene, c}) => {
   const url = useFade(press + 8);
   const fg = c.bg === b.paper ? b.paper : b.dark;
   const fill = c.bg === b.paper ? b.primary : b.accent;
+  // a stinger: after the card, a cut to dark and a beat of nothing, then one line slams in (build.mjs adds the time)
+  const sting = scene.props.stingAt;
+  if (sting && frame >= sting) {
+    const sp = interpolate(frame, [sting + 12, sting + 18], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
+    return (
+      <AbsoluteFill style={{background: b.dark, alignItems: 'center', justifyContent: 'center', padding: 90 * u}}>
+        <div style={{...font(b.display), fontSize: ts(120 * k * u), lineHeight: 1, letterSpacing: -3 * u, color: b.paper, textAlign: 'center', opacity: sp, transform: `scale(${1.25 - 0.25 * sp})`}}><Emph text={scene.props.stinger} color={b.accent} /></div>
+      </AbsoluteFill>
+    );
+  }
   return (
     <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', gap: 44 * u, padding: 90 * u}}>
       <Mark src={c.mark} size={200 * k * u} at={cue(scene, 0)} />
