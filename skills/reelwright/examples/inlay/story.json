@@ -1,0 +1,21 @@
+{
+  "brandJson": "brand/brand.json",
+  "brand": {"primary": "#23443a", "dark": "#23443a", "url": "inlaytrace.com"},
+  "voice": {"voice": "af_heart", "speed": 1.0, "pronounce": {"SVG": "S V G", "inlaytrace.com": "inlay trace dot com"}},
+  "music": {"mood": "bright", "volume": 0.2},
+  "scenes": [
+    {"type": "statement", "bg": "dark", "kicker": "Image to vector", "text": "Most tracers leave *gaps* and *slivers* between colours.",
+     "say": ["Most tracers leave gaps and slivers between colours."]},
+    {"type": "title", "bg": "paper", "tagline": "Trace images into vector shapes that *fit together*.",
+     "say": ["Meet Inlay.", "It traces images into vector shapes that fit together."]},
+    {"type": "screen", "bg": "dark", "frame": "phone", "video": "media/app-phone.mp4", "caption": "Every edge is traced *once*.",
+     "say": ["Every edge is traced once, and shared by the shapes on both sides."]},
+    {"type": "features", "bg": "paper", "title": "Free, private, *open*.",
+     "items": ["Runs in your browser", "Nothing is uploaded", "SVG, PDF, EPS or PNG"],
+     "say": ["It's free, and it runs in your browser.", "Nothing is uploaded.", "Download SVG, PDF, EPS or PNG."]},
+    {"type": "stat", "bg": "dark", "value": "1.3 s", "label": "to trace a *2048 px* image",
+     "say": ["One point three seconds", "for a two thousand pixel image."]},
+    {"type": "end", "bg": "paper", "button": "Open the app",
+     "say": ["Try Inlay, free.", "At inlaytrace.com."]}
+  ]
+}

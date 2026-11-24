@@ -1,0 +1,12 @@
+{
+  "name": "reelwright",
+  "version": "0.1.0",
+  "description": "Short promo videos for a project, made from its repo and its brand: square, vertical and landscape cuts with a Kokoro voiceover timed to the on-screen reveals, a music bed written to the video's length, sound effects, a GIF and a poster. Works in Claude's cloud sessions with no setup beyond about 700 MB of cached downloads.",
+  "author": {
+    "name": "mtblck"
+  },
+  "license": "MIT",
+  "keywords": ["video", "promo", "remotion", "voiceover", "social", "marketing", "gif"],
+  "homepage": "https://github.com/mtblck/reelwright",
+  "repository": "https://github.com/mtblck/reelwright"
+}

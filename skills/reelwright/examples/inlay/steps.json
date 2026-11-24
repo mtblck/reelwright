@@ -1,0 +1,1 @@
+[{"click": "Try a sample"}, {"wait": 2000}, {"shot": "traced"}, {"drag": "[role=slider]", "dx": -110}, {"drag": "[role=slider]", "dx": 200}, {"wait": 600}]
