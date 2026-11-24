@@ -11,6 +11,10 @@ version with the date and bumps `plugin.json` to match.
 
 ### Added
 
+- Burned-in captions, on by default in the vertical and square cuts: a few words at a time, low in the frame and
+  inside the TikTok, Reels and Shorts safe zones, with the word being said lit in the accent. `"captions"` in
+  `story.json` turns them on for every cut, off, or picks the cuts; a scene can opt out
+  ([#46](https://github.com/mtblck/reelwright/pull/46)).
 - `whip` way in: a fast pan with a directional motion smear and a whoosh (`direction` as `push`). `glitch` way in:
   a 4-frame hit that splits the colour channels and jolts bands of the picture sideways, with its own short sound;
   meant for once per video ([#45](https://github.com/mtblck/reelwright/pull/45)).

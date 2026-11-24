@@ -11,7 +11,7 @@
 
 <p align="center">
   A Claude Code plugin that turns a project's repo and brand into a short launch video:<br />
-  square and vertical for social, landscape for the web, a GIF for the README and a poster frame.
+  square and vertical for social with burned-in captions, landscape for the web, a GIF for the README and a poster frame.
 </p>
 
 <p align="center">

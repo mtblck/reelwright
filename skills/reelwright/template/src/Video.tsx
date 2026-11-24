@@ -6,6 +6,7 @@ import {OVERLAP, Transitioned} from './transitions';
 import {SCENES} from './scenes';
 import {DEV_SCENES} from './devscenes';
 import {LookContext, lookOf} from './looks';
+import {Captions} from './captions';
 
 export const Video: React.FC<Props> = (p) => {
   useFonts(p.brand);
@@ -36,6 +37,7 @@ export const Video: React.FC<Props> = (p) => {
           );
         })}
         </Wrap>
+        {p.captions && <Captions captions={p.captions} />}
         {look.Over && !p.quiet && <look.Over />}
         {p.voice && <Audio src={asset(p.voice)} />}
         {p.music && <Audio src={asset(p.music.src)} volume={(f) => p.music!.volume * duck(f) * interpolate(f, [p.durationInFrames - 45, p.durationInFrames], [1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'})} />}

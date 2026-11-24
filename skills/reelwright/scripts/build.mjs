@@ -133,6 +133,7 @@ let t = 0;
 const scenes = [];
 const placed = []; // [file, startSeconds]
 const speech = [];
+const lines4captions = []; // phrases to caption: written text, start in seconds, its clip
 story.scenes.forEach((s, i) => {
   const cues = [];
   let at = LEAD;
@@ -141,6 +142,7 @@ story.scenes.forEach((s, i) => {
     cues.push(f(at));
     placed.push([c.file, t + at]);
     speech.push([f(t + at), f(t + at + c.seconds)]);
+    if (s.captions !== false) lines4captions.push({text: phrases[i][j], at: t + at, clip: c});
     at += c.seconds + PAUSE;
   });
   if (!cues.length) cues.push(f(0.2));
@@ -159,7 +161,7 @@ story.scenes.forEach((s, i) => {
     if (end - t < Math.max(talkEnd + 1, min)) end += bar;
     len = end - t;
   }
-  const {type, say, enter, bg, hold, ...props} = s;
+  const {type, say, enter, bg, hold, captions: _c, ...props} = s;
   // enter is a name ("push") or a name with options ({"type": "push", "direction": "up"})
   const {type: way = i === 0 ? 'cut' : LOOKS[look].enter, ...enterOpts} = typeof enter === 'object' && enter ? enter : {type: enter ?? undefined};
   if (!WAYS.includes(way)) throw new Error(`scene ${i + 1}: enter "${way}" is not one of ${WAYS.join(', ')}`);
@@ -226,7 +228,54 @@ if (m) {
   music = {src, volume: m.volume};
 }
 
-const props = {brand, look, scenes, voice, music, speech, sfx, durationInFrames: total};
+// --- captions: word timings for each phrase, then short lines of a few words ---
+// Kokoro gives no word timings, so they are estimated: the phrase splits at its punctuation, each break
+// lands on a silence found in the clip (voice.py), and the words between share the time by syllables.
+const syllables = (w) => /^[A-Z]{2,}\W*$/.test(w) ? w.replace(/\W/g, '').length : /\d/.test(w) ? w.replace(/\D/g, '').length + 1 : Math.max(1, (w.toLowerCase().replace(/e\b/, '').match(/[aeiouy]+/g) ?? []).length);
+function wordTimes(text, at, clip) {
+  const words = text.replace(/\*/g, '').split(/\s+/).filter(Boolean);
+  const breaks = words.slice(0, -1).map((w, k) => (/[,;:.!?—–]$/.test(w) ? k : -1)).filter((k) => k >= 0);
+  let gaps = [...(clip.pauses ?? [])];
+  if (gaps.length > breaks.length) gaps = gaps.sort((a, b) => (b[1] - b[0]) - (a[1] - a[0])).slice(0, breaks.length).sort((a, b) => a[0] - b[0]);
+  const use = gaps.length === breaks.length;
+  // segments of words with their time span
+  const segs = [];
+  let from = 0, w0 = 0;
+  (use ? breaks : []).forEach((k, n) => { segs.push([w0, k + 1, from, gaps[n][0]]); w0 = k + 1; from = gaps[n][1]; });
+  segs.push([w0, words.length, from, clip.seconds]);
+  const out = [];
+  for (const [a, b, s0, s1] of segs) {
+    const ws = words.slice(a, b);
+    const total = ws.reduce((n, w) => n + syllables(w) + 0.3, 0);
+    let x = s0;
+    for (const w of ws) { const d = ((syllables(w) + 0.3) / total) * (s1 - s0); out.push({t: w, from: f(at + x), to: f(at + x + d)}); x += d; }
+  }
+  return out;
+}
+const MAX_WORDS = 4, MAX_CHARS = 22;
+const captionLines = [];
+for (const ln of lines4captions) {
+  const ws = wordTimes(ln.text, ln.at, ln.clip);
+  // runs of words between punctuation (a lone word joins the next run), each cut into even lines
+  const runs = [[]];
+  ws.forEach((w, k) => { runs.at(-1).push(w); if (/[,;:.!?—–]$/.test(w.t) && runs.at(-1).length >= 2 && k < ws.length - 1) runs.push([]); });
+  if (runs.length > 1 && runs.at(-1).length === 1 && runs.at(-2).length < MAX_WORDS) runs.at(-2).push(...runs.pop());
+  for (const run of runs) {
+    let n = Math.ceil(run.length / MAX_WORDS);
+    const chars = run.map((w) => w.t).join(' ').length;
+    n = Math.min(run.length, Math.max(n, Math.ceil(chars / MAX_CHARS)));
+    for (let k = 0; k < n; k++) {
+      const part = run.slice(Math.round((k * run.length) / n), Math.round(((k + 1) * run.length) / n));
+      if (part.length) captionLines.push({from: part[0].from, to: part.at(-1).to, words: part});
+    }
+  }
+}
+// each line stays up until the next one, or a beat after its last word
+captionLines.forEach((c, k) => { const next = captionLines[k + 1]; c.to = Math.min(c.to + 8, next ? next.from : Infinity); });
+// on by default for the vertical and square cuts (mostly watched muted in feeds), off for landscape
+const captions = story.captions === false ? null : {formats: story.captions === true ? ['vertical', 'square', 'landscape'] : Array.isArray(story.captions) ? story.captions : ['vertical', 'square'], lines: captionLines};
+
+const props = {brand, look, scenes, voice, music, speech, sfx, captions, durationInFrames: total};
 fs.writeFileSync(path.join(run, 'props.json'), JSON.stringify(props, null, 1));
 console.log(`${total} frames = ${(total / FPS).toFixed(1)} s, ${look} look${music ? `, music ${m.file ? path.basename(music.src) : `${m.mood} bed`}` : ', no music'}${beat ? `, cuts on the beat at ${bpm} bpm` : ''}`);
 for (const [i, s] of scenes.entries()) console.log(`  f${String(s.start).padStart(4)}-${String(s.start + s.dur).padStart(4)}  ${s.type.padEnd(9)} ${phrases[i].join(' | ')}`);
