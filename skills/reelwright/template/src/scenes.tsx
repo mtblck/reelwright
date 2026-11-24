@@ -86,7 +86,7 @@ export const Screen: React.FC<P> = ({scene, c}) => {
   );
   const bw = landscape ? 1080 * u : vertical ? 960 * u : 900 * u;
   const bh = landscape ? 680 * u : vertical ? 1000 * u : 600 * u;
-  const pw = (vertical ? 640 : landscape ? 410 : 400) * u;
+  const pw = (vertical ? 640 : landscape ? 410 : 380) * u;
   const device = phone ? (
     <div style={{width: pw, height: pw * 2.16, borderRadius: 64 * u, padding: 16 * u, background: '#0b0b0c', boxShadow: `0 ${30 * u}px ${80 * u}px ${mix(b.dark, '#000000', 0.5)}55`}}>
       <div style={{width: '100%', height: '100%', borderRadius: 50 * u, overflow: 'hidden', background: b.paper}}>{media}</div>
@@ -100,10 +100,12 @@ export const Screen: React.FC<P> = ({scene, c}) => {
       <div style={{flex: 1, overflow: 'hidden'}}>{media}</div>
     </div>
   );
-  const caption = <Words text={scene.props.caption} at={cue(scene) + 4} size={(landscape ? 76 : 72) * u} color={c.ink} accent={b.accent} align={landscape && phone ? 'left' : 'center'} />;
+  // A phone is too tall to stack under a caption in a square frame, so it sits beside it there too.
+  const side = phone && !vertical;
+  const caption = <Words text={scene.props.caption} at={cue(scene) + 4} size={(landscape ? 76 : 72) * u} color={c.ink} accent={b.accent} align={side ? 'left' : 'center'} />;
   const dev = <div style={{transform: `translateY(${(1 - p) * 160 * u}px) scale(${0.92 + 0.08 * p})`, opacity: Math.min(1, p * 2)}}>{device}</div>;
-  return landscape && phone ? (
-    <AbsoluteFill style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 100 * u, padding: 80 * u}}>
+  return side ? (
+    <AbsoluteFill style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: (landscape ? 100 : 70) * u, padding: 80 * u}}>
       <div style={{flex: 1, minWidth: 0, maxWidth: 900 * u}}>{caption}</div>
       {dev}
     </AbsoluteFill>
@@ -219,4 +221,112 @@ export const End: React.FC<P> = ({scene, c}) => {
   );
 };
 
-export const SCENES = {title: Title, statement: Statement, screen: Screen, features: Features, stat: Stat, steps: Steps, end: End};
+
+
+// kinetic: huge words that slam in, one per phrase, each on its own colour.  props: {words*: string[], colors?: ('dark'|'paper'|'brand'|'accent')[], stack?: boolean}
+// With stack, earlier words stay (dimmed) and the new one lands under them; without it each word replaces the last.
+export const Kinetic: React.FC<P> = ({scene, c}) => {
+  const b = useBrand();
+  const {u, vertical} = useLayout();
+  const frame = useCurrentFrame();
+  const words: string[] = scene.props.words ?? [];
+  const n = Math.max(0, words.reduce((m, _w, i) => (frame >= cue(scene, i) ? i : m), 0));
+  const pal: Record<string, {bg: string; ink: string; hot: string}> = {
+    dark: {bg: b.dark, ink: b.paper, hot: b.accent},
+    paper: {bg: b.paper, ink: b.ink, hot: b.accent},
+    brand: {bg: b.primary, ink: b.paper, hot: b.accent},
+    accent: {bg: b.accent, ink: b.dark, hot: b.paper},
+  };
+  const col = pal[scene.props.colors?.[scene.props.stack ? 0 : n] ?? scene.bg] ?? pal.dark;
+  const size = (vertical ? 210 : 190) * u;
+  const slam = (i: number) => {
+    const p = usePop(cue(scene, i), 11);
+    return {transform: `scale(${1.35 - 0.35 * p})`, opacity: Math.min(1, p * 2.2), filter: `blur(${Math.max(0, (1 - p) * 10 * u)}px)`};
+  };
+  const style = (i: number) => ({...font(b.display), fontSize: size, lineHeight: 0.98, letterSpacing: -0.035 * size, color: col.ink, textAlign: 'center' as const, textWrap: 'balance' as any});
+  const pops = words.map((_, i) => slam(i));
+  const flash = n === 0 && !scene.props.flashFirst ? 0 : interpolate(frame - cue(scene, n), [0, 5], [0.35, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
+  return (
+    <AbsoluteFill style={{background: col.bg, alignItems: 'center', justifyContent: 'center', padding: 80 * u}}>
+      {scene.props.stack ? (
+        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 * u}}>
+          {words.map((w, i) => (frame >= cue(scene, i) ? <div key={i} style={{...style(i), ...pops[i], opacity: (pops[i].opacity as number) * (i < n ? 0.38 : 1)}}><Emph text={w} color={col.hot} /></div> : null))}
+        </div>
+      ) : (
+        <div key={n} style={{...style(n), ...pops[n]}}><Emph text={words[n] ?? ''} color={col.hot} /></div>
+      )}
+      <AbsoluteFill style={{background: col.hot, opacity: flash, pointerEvents: 'none'}} />
+    </AbsoluteFill>
+  );
+};
+
+// reframe: one frame snaps between shapes, a clip or image in each, one per phrase; a phrase after the last shape
+// draws the shapes' outlines onto one centre (the three-cuts mark, if the brand has one like Reelwright's).
+// props: {shapes*: [{aspect: '9:16'|'1:1'|'16:9'|number, video?, image?, label?}], assemble?: boolean}
+const ratio = (a: any) => (typeof a === 'number' ? a : (([w, h]) => w / h)(String(a).split(':').map(Number)));
+export const Reframe: React.FC<P> = ({scene, c}) => {
+  const b = useBrand();
+  const {u, width, height, vertical} = useLayout();
+  const frame = useCurrentFrame();
+  const shapes: any[] = scene.props.shapes ?? [];
+  const k = shapes.length;
+  // shape i eases in from cue i; s is a fractional shape index
+  let s = 0;
+  for (let i = 1; i < k; i++) s += usePop(cue(scene, i), 15) * 1;
+  const lo = Math.min(k - 1, Math.floor(s)), hi = Math.min(k - 1, lo + 1), f = s - lo;
+  const area = {w: width * (vertical ? 0.84 : 0.74), h: height * (vertical ? 0.6 : 0.62)};
+  const fit = (r: number) => { const w = Math.min(area.w, area.h * r); return {w, h: w / r}; };
+  const A = fit(ratio(shapes[lo]?.aspect ?? 1)), B = fit(ratio(shapes[hi]?.aspect ?? 1));
+  const box = {w: A.w + (B.w - A.w) * f, h: A.h + (B.h - A.h) * f};
+  // assembly
+  const asm = scene.props.assemble !== false && k > 0 ? usePop(cue(scene, k), 16) : 0;
+  const L = Math.min(width, height) * 0.42; // long side of the mark's frames
+  const line = c.bg === b.paper ? b.primary : b.paper;
+  const stroke = (16 / 208) * L;
+  const intro = usePop(cue(scene, 0), 13);
+  const label = shapes[Math.round(s)]?.label;
+  const labelKey = Math.round(s);
+  const lp = usePop(cue(scene, Math.min(labelKey, k - 1)) + 2, 12);
+  const outline = (w: number, h: number, color: string, p: number, delay = 0) => {
+    const q = Math.max(0, Math.min(1, p * 1.6 - delay));
+    return <div style={{position: 'absolute', left: '50%', top: '50%', width: w, height: h, marginLeft: -w / 2, marginTop: -h / 2, border: `${stroke}px solid ${color}`, borderRadius: (10 / 208) * L, opacity: q, transform: `scale(${0.6 + 0.4 * q})`}} />;
+  };
+  const mediaOp = 1 - Math.min(1, asm * 2);
+  const frameW = box.w + (L - box.w) * asm; // the screen frame becomes the mark's wide frame
+  return (
+    <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center'}}>
+      <div style={{position: 'relative', width: frameW, height: box.h + ((L * 9) / 16 - box.h) * asm, transform: `scale(${0.85 + 0.15 * intro})`, opacity: Math.min(1, intro * 2)}}>
+        <div style={{position: 'absolute', inset: 0, borderRadius: (b.radius ?? 20) * u * (1 - asm), overflow: 'hidden', background: c.card, opacity: mediaOp, boxShadow: `0 ${30 * u}px ${90 * u}px #00000055`}}>
+          {shapes.map((sh, i) => {
+            const op = Math.max(0, 1 - Math.abs(s - i) * 1.6);
+            if (op <= 0) return null;
+            const st = {position: 'absolute' as const, inset: 0, width: '100%', height: '100%', objectFit: 'cover' as const, opacity: op};
+            return sh.video ? <OffthreadVideo key={i} src={asset(sh.video)} muted style={st} /> : sh.image ? <Img key={i} src={asset(sh.image)} style={st} /> : null;
+          })}
+        </div>
+        {/* the frame's own edge, in the accent while it plays */}
+        <div style={{position: 'absolute', inset: -stroke * 0.5, border: `${stroke * 0.5}px solid ${b.accent}`, borderRadius: (b.radius ?? 20) * u * (1 - asm) + stroke * 0.5, opacity: mediaOp * intro}} />
+      </div>
+      {asm > 0 && (
+        <AbsoluteFill>
+          {outline(L * (9 / 16), L, line, asm, 0)}
+          {outline(L, L * (9 / 16), line, asm, 0.2)}
+          {outline((149 / 208) * L, (149 / 208) * L, b.accent, asm, 0.45)}
+        </AbsoluteFill>
+      )}
+      {label && (
+        <div style={{position: 'absolute', bottom: (vertical ? 170 : 70) * u, left: 0, right: 0, textAlign: 'center', ...font(b.display), fontSize: (vertical ? 96 : 76) * u, letterSpacing: -1.5 * u, color: c.ink, opacity: Math.min(1, lp * 1.5) * mediaOp, transform: `translateY(${(1 - lp) * 30 * u}px)`}}>
+          <Emph text={label} color={b.accent} />
+          <span style={{...font(b.text), fontSize: (vertical ? 44 : 36) * u, color: b.accent, marginLeft: 22 * u, fontWeight: 700}}>{String(shapes[labelKey]?.aspect ?? '')}</span>
+        </div>
+      )}
+      {scene.props.caption && (
+        <div style={{position: 'absolute', bottom: (vertical ? 170 : 70) * u, left: 0, right: 0, display: 'flex', justifyContent: 'center', opacity: Math.min(1, asm * 1.5)}}>
+          <Words text={scene.props.caption} at={cue(scene, k) + 8} size={(vertical ? 96 : 76) * u} color={c.ink} accent={b.accent} />
+        </div>
+      )}
+    </AbsoluteFill>
+  );
+};
+
+export const SCENES = {title: Title, statement: Statement, screen: Screen, features: Features, stat: Stat, steps: Steps, end: End, kinetic: Kinetic, reframe: Reframe};

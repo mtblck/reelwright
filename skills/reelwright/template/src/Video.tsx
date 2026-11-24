@@ -1,11 +1,23 @@
 import React from 'react';
 import {AbsoluteFill, Audio, Sequence, interpolate, useCurrentFrame, useVideoConfig, Easing} from 'remotion';
 import type {Props, Scene} from './types';
-import {BrandContext, asset, sceneColors, useFonts} from './ui';
+import {BrandContext, asset, sceneColors, useBrand, useFonts} from './ui';
 import {SCENES} from './scenes';
 
 const Enter: React.FC<{scene: Scene; children: React.ReactNode}> = ({scene, children}) => {
   const frame = useCurrentFrame();
+  const b = useBrand();
+  if (scene.enter === 'splice') {
+    // a splice: the new scene wipes in behind a bar of the accent colour, like tape across a cut
+    const w = interpolate(frame, [0, 10], [0, 1], {extrapolateRight: 'clamp', easing: Easing.inOut(Easing.cubic)});
+    const bar = 0.06;
+    return (
+      <AbsoluteFill>
+        <AbsoluteFill style={{clipPath: `inset(0 ${(1 - w) * 100}% 0 0)`}}>{children}</AbsoluteFill>
+        {w < 1 && <AbsoluteFill style={{left: `${w * 100 - bar * 100 * (1 - w)}%`, width: `${bar * 100}%`, background: b.accent}} />}
+      </AbsoluteFill>
+    );
+  }
   const {width} = useVideoConfig();
   const t = interpolate(frame, [0, 12], [0, 1], {extrapolateRight: 'clamp', easing: Easing.out(Easing.cubic)});
   const style: React.CSSProperties =

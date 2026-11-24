@@ -13,7 +13,7 @@ const LEAD = 0.25; // seconds from a scene's cut to its first word
 const PAUSE = 0.3; // between phrases inside a scene
 const GAP = 0.45; // after a scene's last phrase, before the next cut
 const TAIL = 1.4; // extra hold on the last scene
-const MIN = {title: 2.2, statement: 2, screen: 3, features: 3, stat: 2.4, steps: 3, end: 2.6};
+const MIN = {title: 2.2, statement: 2, screen: 3, features: 3, stat: 2.4, steps: 3, end: 2.6, kinetic: 1.2, reframe: 3};
 
 const SKILL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const run = path.resolve(process.argv[2] ?? '');
@@ -136,7 +136,8 @@ for (const [a, b] of scenes.slice(0, -1).map((s, i) => [s, scenes[i + 1]])) a.du
 const total = scenes.at(-1).start + scenes.at(-1).dur;
 
 // media used by scenes -> public/
-for (const s of scenes) for (const k of ['image', 'video']) if (s.props[k] && !/^https?:/.test(s.props[k])) s.props[k] = copy(path.resolve(run, s.props[k]), 'media');
+const local = (o) => { for (const k of ['image', 'video']) if (o[k] && !/^https?:/.test(o[k])) o[k] = copy(path.resolve(run, o[k]), 'media'); };
+for (const s of scenes) { local(s.props); (s.props.shapes ?? []).forEach(local); }
 
 // one voice track, every clip at its place
 let voice = null;
@@ -148,7 +149,7 @@ if (placed.length) {
   voice = 'voice.wav';
 }
 
-// sound effects: a whoosh on moving cuts, pops and ticks on reveals, a click on the end button
+// sound effects: a whoosh on moving cuts, ticks on list reveals, a click and chime on the end button
 const SFX = path.join(SKILL, 'assets/sfx');
 const sfx = [];
 const add = (name, at, volume) => {
@@ -156,12 +157,12 @@ const add = (name, at, volume) => {
   sfx.push({src: copy(path.join(SFX, `${name}.wav`), 'sfx'), at: Math.max(0, at), volume});
 };
 for (const s of scenes) {
-  if (s.enter === 'slide' || s.enter === 'zoom') add('whoosh', s.start - 4, 0.35);
-  if (s.type === 'title') add('pop', s.start + 2, 0.5);
+  if (s.enter === 'slide' || s.enter === 'zoom' || s.enter === 'splice') add('whoosh', s.start - 4, 0.175);
+  if (s.type === 'reframe') { s.cues.slice(1, (s.props.shapes ?? []).length).forEach((c) => add('whoosh', s.start + c - 3, 0.15)); if (s.cues.length > (s.props.shapes ?? []).length) add('rise', s.start + s.cues[(s.props.shapes ?? []).length] - 6, 0.4); }
   if (s.type === 'features') s.cues.slice(1).forEach((c) => add('tick', s.start + c, 0.45));
   if (s.type === 'steps') s.cues.slice(s.props.title ? 1 : 0).forEach((c) => add('tick', s.start + c, 0.45));
   if (s.type === 'stat') add('rise', s.start + s.cues[0], 0.4);
-  if (s.type === 'end') { add('pop', s.start + s.cues[0], 0.45); add('click', s.start + (s.cues[1] ?? s.cues[0]) + 7, 0.6); add('chime', s.start + (s.cues[1] ?? s.cues[0]) + 10, 0.4); }
+  if (s.type === 'end') { add('click', s.start + (s.cues[1] ?? s.cues[0]) + 7, 0.6); add('chime', s.start + (s.cues[1] ?? s.cues[0]) + 10, 0.4); }
 }
 
 // music: a bed written to the video's length by music.mjs (CC0), or a file the story names

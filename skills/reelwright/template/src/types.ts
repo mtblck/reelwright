@@ -17,10 +17,10 @@ export type Brand = {
 };
 
 export type Scene = {
-  type: 'title' | 'statement' | 'screen' | 'features' | 'stat' | 'steps' | 'end';
+  type: 'title' | 'statement' | 'screen' | 'features' | 'stat' | 'steps' | 'end' | 'kinetic' | 'reframe';
   start: number; // frame
   dur: number; // frames
-  enter: 'cut' | 'slide' | 'fade' | 'zoom';
+  enter: 'cut' | 'slide' | 'fade' | 'zoom' | 'splice';
   bg: 'paper' | 'dark' | 'brand';
   cues: number[]; // local frame where each phrase of the scene starts
   props: Record<string, any>;
