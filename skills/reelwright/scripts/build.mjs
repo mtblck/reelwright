@@ -158,7 +158,6 @@ const add = (name, at, volume) => {
 };
 for (const s of scenes) {
   if (s.enter === 'slide' || s.enter === 'zoom' || s.enter === 'splice') add('whoosh', s.start - 4, 0.175);
-  if (s.type === 'kinetic') s.cues.forEach((c) => add('pop', s.start + c, 0.2));
   if (s.type === 'reframe') { s.cues.slice(1, (s.props.shapes ?? []).length).forEach((c) => add('whoosh', s.start + c - 3, 0.15)); if (s.cues.length > (s.props.shapes ?? []).length) add('rise', s.start + s.cues[(s.props.shapes ?? []).length] - 6, 0.4); }
   if (s.type === 'title') add('pop', s.start + 2, 0.5);
   if (s.type === 'features') s.cues.slice(1).forEach((c) => add('tick', s.start + c, 0.45));
