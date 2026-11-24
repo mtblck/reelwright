@@ -10,6 +10,7 @@ export type Brand = {
   support?: string; // panels and rules
   display: {family: string; weight: number};
   text: {family: string; weight: number};
+  mono?: {family: string; weight: number}; // code and terminal text (build.mjs loads it when a story needs it)
   mark?: string; // square mark on paper (public path)
   markDark?: string; // square mark on dark
   radius?: number; // card corner radius at 1080 px
@@ -18,7 +19,7 @@ export type Brand = {
 };
 
 export type Scene = {
-  type: 'title' | 'statement' | 'screen' | 'features' | 'stat' | 'steps' | 'end' | 'kinetic' | 'reframe';
+  type: 'title' | 'statement' | 'screen' | 'features' | 'stat' | 'steps' | 'end' | 'kinetic' | 'reframe' | 'terminal' | 'code';
   start: number; // frame
   dur: number; // frames
   enter: string; // a key of TRANSITIONS in transitions.tsx: cut, slide, fade, zoom, splice, push

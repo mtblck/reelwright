@@ -16,7 +16,7 @@ const TAIL = 1.4; // extra hold on the last scene
 const WAYS = ['cut', 'slide', 'fade', 'zoom', 'splice', 'push', 'mask']; // the keys of TRANSITIONS in template/src/transitions.tsx
 // names and default ways in of LOOKS in template/src/looks.tsx; `mono` swaps the brand's fonts for a mono face, set smaller (it runs wider)
 const LOOKS = {clean: {enter: 'slide'}, film: {enter: 'splice'}, terminal: {enter: 'cut', mono: {family: 'JetBrains Mono', display: 800, text: 400, scale: 0.72}}};
-const MIN = {title: 2.2, statement: 2, screen: 3, features: 3, stat: 2.4, steps: 3, end: 2.6, kinetic: 1.2, reframe: 3};
+const MIN = {title: 2.2, statement: 2, screen: 3, features: 3, stat: 2.4, steps: 3, end: 2.6, kinetic: 1.2, reframe: 3, terminal: 3.5, code: 3.5};
 
 const SKILL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const run = path.resolve(process.argv[2] ?? '');
@@ -75,7 +75,9 @@ if (mono) { brand.display = {family: mono.family, weight: mono.display}; brand.t
 
 // --- fonts: fetched once with curl into the cache and served from public/fonts, so the render
 // needs no network and no trust in whatever proxy sits in front of it ---
-brand.fontCss = fonts([brand.display, brand.text]);
+// terminal and code scenes set their text in a mono face
+if (story.scenes.some((s) => s.type === 'terminal' || s.type === 'code')) brand.mono ??= mono ? brand.display : {family: 'JetBrains Mono', weight: 700};
+brand.fontCss = fonts([brand.display, brand.text, ...(brand.mono ? [brand.mono] : [])]);
 function fonts(list) {
   const fams = [...new Map(list.map((f) => [f.family, f])).values()];
   const q = fams.map((f) => `family=${encodeURIComponent(f.family).replace(/%20/g, '+')}:wght@400;${f.weight === 400 ? 700 : f.weight}`).join('&');
@@ -168,6 +170,17 @@ for (const [a, b] of scenes.slice(0, -1).map((s, i) => [s, scenes[i + 1]])) a.du
 const total = scenes.at(-1).start + scenes.at(-1).dur;
 
 // media used by scenes -> public/
+// terminal: a transcript recorded by term.mjs; code: lines read from a file in the repo
+for (const s of scenes) {
+  if (s.type === 'terminal' && s.props.transcript) Object.assign(s.props, JSON.parse(fs.readFileSync(path.resolve(run, s.props.transcript), 'utf8')), {...s.props, transcript: undefined});
+  if (s.type === 'code' && s.props.file) {
+    const all = fs.readFileSync(path.resolve(run, s.props.file), 'utf8').split('\n');
+    const [a, z] = s.props.lines ?? [1, all.length];
+    s.props.code = all.slice(a - 1, z).join('\n');
+    s.props.lines = [a, z];
+    s.props.title ??= path.basename(s.props.file);
+  }
+}
 const local = (o) => { for (const k of ['image', 'video']) if (o[k] && !/^https?:/.test(o[k])) o[k] = copy(path.resolve(run, o[k]), 'media'); };
 for (const s of scenes) { local(s.props); (s.props.shapes ?? []).forEach(local); }
 

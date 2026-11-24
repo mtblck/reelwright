@@ -51,7 +51,7 @@ const Cursor: React.FC<{color: string}> = ({color}) => (
 );
 
 // Big words, a word at a time from the phrase's cue (or typed on, under a look that types).
-const Words: React.FC<{text: string; at: number; size: number; color: string; accent: string; align?: 'left' | 'center'; step?: number}> = ({text, at, size, color, accent, align = 'center', step = 3}) => {
+export const Words: React.FC<{text: string; at: number; size: number; color: string; accent: string; align?: 'left' | 'center'; step?: number}> = ({text, at, size, color, accent, align = 'center', step = 3}) => {
   const b = useBrand();
   const frame = useCurrentFrame();
   const look = useLook();

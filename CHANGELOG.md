@@ -11,6 +11,10 @@ version with the date and bumps `plugin.json` to match.
 
 ### Added
 
+- `terminal` and `code` scenes, for projects with no app to film. `terminal` types a command, prints its output and
+  lights one line; `scripts/term.mjs` records a real run for it. `code` shows lines from a file in the repo with line
+  numbers and light syntax colours, then lights one range per phrase; `+ `/`- ` lines show as a diff. Both set text in
+  JetBrains Mono (or the look's mono face) inside a dark window ([#44](https://github.com/mtblck/reelwright/pull/44)).
 - `terminal` look: JetBrains Mono in place of the brand's fonts (set at 72%, since a mono face runs wider), scanlines, and words that type on behind a block
   cursor with a soft phosphor glow (in `statement`, `kinetic` and every caption), with hard cuts. `kinetic` becomes
   left-aligned lines behind a `>` prompt, and `stat` prints its number with the label as a `#` comment. For CLIs and dev

@@ -94,17 +94,18 @@ until nothing is cut off or crowded, so the slow part only runs once.
 ## Scenes
 
 A story is a list of scenes in `story.json`. Each scene has its lines (`say`), a background from the
-brand and a way in: `cut`, `slide`, `fade`, `zoom` or `splice`.
+brand and a way in: `cut`, `slide`, `fade`, `zoom`, `splice`, `push` or `mask`.
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset=".github/readme/scenes-dark.webp" />
-    <img src=".github/readme/scenes-light.webp" alt="Nine stills, one for each move: statement, title, steps, screen (a phone frame), features (a checklist), kinetic (stacked words), reframe (the three-frame mark), the splice transition mid-wipe, and the end card" width="880" />
+    <img src=".github/readme/scenes-light.webp" alt="Twelve stills, one for each move: statement, title, steps, screen (a phone frame), features (a checklist), kinetic (stacked words), reframe (the three-frame mark), the splice transition mid-wipe, the end card, terminal (a command and its output, one line lit), code (a snippet with two lines lit) and stat (a big 3)" width="880" />
   </picture>
 </p>
 
-`stat` (a number that counts up, then its label) completes the set. Every scene, its props and the
-story templates (App launch, Feature demo, Tool explainer and Hype) are in
+`terminal` and `code` are for projects with no app to film: a real command's output, recorded by
+`scripts/term.mjs`, and lines from a file in the repo. Every scene, its props and the
+story templates (App launch, Feature demo, Tool explainer, Dev tool and Hype) are in
 [`references/story.md`](skills/reelwright/references/story.md).
 
 ## How it works

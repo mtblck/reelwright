@@ -15,6 +15,7 @@ A short video built from what the project really is: its own screens, its own br
 |---|---|
 | `scripts/setup.sh` | One-time install into `~/.cache/reelwright` (Remotion, the Kokoro voice via kokoro-onnx, its model from GitHub). The other scripts run it themselves; skips what's done. |
 | `scripts/capture.mjs` | `node <skill>/scripts/capture.mjs <url> <run>/media [--device phone\|desktop] [--steps steps.json] [--clip]`: screenshots and a screen clip of the running app, driven by a list of steps. |
+| `scripts/term.mjs` | `node <skill>/scripts/term.mjs <run>/media/term.json [--cwd <dir>] [--show "cmd as typed"] -- <cmd> <args...>`: runs a command and records its real output (colours stripped, 40 lines at most) for a `terminal` scene's `transcript`. |
 | `scripts/build.mjs` | `node <skill>/scripts/build.mjs <run>`: reads `<run>/story.json`, voices each phrase, lays out the timeline, writes the voice track, fonts, sound effects and music into `<run>/public/` and `<run>/props.json`. Prints the timeline. |
 | `scripts/render.mjs` | `node <skill>/scripts/render.mjs <run> stills [--format square]` for a contact sheet; `node <skill>/scripts/render.mjs <run> [--formats square,vertical,landscape]` for the videos, GIF and poster. |
 | `scripts/music.mjs` | Writes the music bed (called by `build.mjs`). Moods `bright`, `calm`, `tech`. |
