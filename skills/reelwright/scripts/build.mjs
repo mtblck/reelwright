@@ -110,6 +110,15 @@ const clips = lines.length
 fs.rmSync(spec);
 
 // --- timeline ---
+// Beat sync: with a generated bed (or a file whose bpm the story gives), every cut lands on a beat of
+// the music and the video ends on a bar line, so the last chord rings out with the end card. A cut moves
+// to the nearest beat, or the one after when the nearest would clip the scene's last word or its minimum
+// length. Only whole scenes move, so each phrase keeps its place against its reveal.
+const m = story.music === false ? null : {mood: 'bright', volume: 0.22, ...story.music};
+const MOOD_BPM = {bright: 112, calm: 88, tech: 120}; // keep in step with MOODS in music.mjs
+const bpm = !m || story.beatSync === false ? 0 : m.file ? Number(m.bpm ?? 0) : Number(m.bpm ?? MOOD_BPM[m.mood] ?? 112);
+const beat = bpm ? 60 / bpm : 0;
+const SNAP_GAP = 0.2; // seconds a cut must stay clear of the scene's last word
 const f = (s) => Math.round(s * FPS);
 let t = 0;
 const scenes = [];
@@ -126,8 +135,21 @@ story.scenes.forEach((s, i) => {
     at += c.seconds + PAUSE;
   });
   if (!cues.length) cues.push(f(0.2));
+  const talkEnd = phrases[i].length ? at - PAUSE : 0; // end of the scene's last word
+  const last = i === story.scenes.length - 1;
+  const min = (MIN[s.type] ?? 2) + (s.hold ?? 0);
   let len = phrases[i].length ? at - PAUSE + GAP : 2;
-  len = Math.max(len, MIN[s.type] ?? 2) + (s.hold ?? 0) + (i === story.scenes.length - 1 ? TAIL : 0);
+  len = Math.max(len, min) + (last ? TAIL : 0);
+  if (beat && !last) {
+    let end = Math.round((t + len) / beat) * beat;
+    if (end - t < Math.max(talkEnd + SNAP_GAP, min)) end += beat;
+    len = end - t;
+  } else if (beat) {
+    const bar = beat * 4;
+    let end = Math.round((t + len) / bar) * bar;
+    if (end - t < Math.max(talkEnd + 1, min)) end += bar;
+    len = end - t;
+  }
   const {type, say, enter, bg, hold, ...props} = s;
   scenes.push({type, start: f(t), dur: f(len), enter: enter ?? (i === 0 ? 'cut' : 'slide'), bg: bg ?? 'paper', cues, props});
   t += len;
@@ -167,7 +189,6 @@ for (const s of scenes) {
 
 // music: a bed written to the video's length by music.mjs (CC0), or a file the story names
 let music = null;
-const m = story.music === false ? null : {mood: 'bright', volume: 0.22, ...story.music};
 if (m) {
   let src;
   if (m.file) src = copy(path.resolve(run, m.file), 'music');
@@ -182,5 +203,5 @@ if (m) {
 
 const props = {brand, scenes, voice, music, speech, sfx, durationInFrames: total};
 fs.writeFileSync(path.join(run, 'props.json'), JSON.stringify(props, null, 1));
-console.log(`${total} frames = ${(total / FPS).toFixed(1)} s${music ? `, music ${m.file ? path.basename(music.src) : `${m.mood} bed`}` : ', no music'}`);
+console.log(`${total} frames = ${(total / FPS).toFixed(1)} s${music ? `, music ${m.file ? path.basename(music.src) : `${m.mood} bed`}` : ', no music'}${beat ? `, cuts on the beat at ${bpm} bpm` : ''}`);
 for (const [i, s] of scenes.entries()) console.log(`  f${String(s.start).padStart(4)}-${String(s.start + s.dur).padStart(4)}  ${s.type.padEnd(9)} ${phrases[i].join(' | ')}`);
