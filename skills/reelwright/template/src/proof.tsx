@@ -45,7 +45,7 @@ export const BeforeAfter: React.FC<P> = ({scene, c}) => {
   return (
     <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', gap: 48 * u}}>
       <Caption scene={scene} c={c} max={vw} />
-      <div style={{width: vw, height: vh, position: 'relative', borderRadius: (b.radius ?? 20) * u, overflow: 'hidden', background: b.paper, boxShadow: `0 ${30 * u}px ${80 * u}px #00000030`, ...rise(p, u, 140)}}>
+      <div data-match style={{width: vw, height: vh, position: 'relative', borderRadius: (b.radius ?? 20) * u, overflow: 'hidden', background: b.paper, boxShadow: `0 ${30 * u}px ${80 * u}px #00000030`, ...rise(p, u, 140)}}>
         <AbsoluteFill><Media src={scene.props.before} position={scene.props.position} /></AbsoluteFill>
         <AbsoluteFill style={{clipPath: `inset(0 0 0 ${(1 - x) * 100}%)`}}><Media src={scene.props.after} position={scene.props.position} /></AbsoluteFill>
         {tag(l0, 'left', interpolate(x, [0.7, 0.95], [1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}))}

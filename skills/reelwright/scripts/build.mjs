@@ -14,7 +14,7 @@ const PAUSE = 0.3; // between phrases inside a scene
 const STING = 1.7; // seconds a stinger adds after the end card: 0.4 of dark, then the stinger
 const GAP = 0.45; // after a scene's last phrase, before the next cut
 const TAIL = 1.4; // extra hold on the last scene
-const WAYS = ['cut', 'slide', 'fade', 'zoom', 'splice', 'push', 'mask', 'whip', 'glitch']; // the keys of TRANSITIONS in template/src/transitions.tsx
+const WAYS = ['cut', 'slide', 'fade', 'zoom', 'splice', 'push', 'mask', 'whip', 'glitch', 'match']; // the keys of TRANSITIONS in template/src/transitions.tsx
 // names and default ways in of LOOKS in template/src/looks.tsx; `mono` swaps the brand's fonts for a mono face, set smaller (it runs wider)
 const LOOKS = {clean: {enter: 'slide'}, film: {enter: 'splice'}, terminal: {enter: 'cut', mono: {family: 'JetBrains Mono', display: 800, text: 400, scale: 0.72}}, poster: {enter: 'cut', scale: 1.12}, blueprint: {enter: 'fade'}, paper: {enter: 'slide'}, sketch: {enter: 'fade'}, isometric: {enter: 'zoom'}};
 const MIN = {title: 2.2, statement: 2, screen: 3, features: 3, stat: 2.4, steps: 3, end: 2.6, kinetic: 1.2, reframe: 3, terminal: 3.5, code: 3.5, 'zoom-pan': 3.5, 'before-after': 3.5, quote: 3, compare: 3, 'logo-wall': 2.6, diagram: 3};

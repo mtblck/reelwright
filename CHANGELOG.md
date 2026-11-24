@@ -11,6 +11,8 @@ version with the date and bumps `plugin.json` to match.
 
 ### Added
 
+- `match` way in: a match cut. The old scene's main shape (a device, window, frame, viewport or the mark) moves and
+  reshapes onto the new scene's, measured from the page so it lands exactly ([#51](https://github.com/mtblck/reelwright/pull/51)).
 - Five looks: `poster` (capitals, a slab of colour, huge cropped scene numbers, hard cuts), `blueprint` (grid paper,
   crop marks and a dimension line drawn on), `paper` (12 fps stop motion, paper grain, a torn edge), `sketch` (boiling
   lines, marker scribbles under starred words) and `isometric` (devices and cards tilted in 3D)

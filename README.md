@@ -94,7 +94,7 @@ until nothing is cut off or crowded, so the slow part only runs once.
 ## Scenes
 
 A story is a list of scenes in `story.json`. Each scene has its lines (`say`), a background from the
-brand and a way in: `cut`, `slide`, `fade`, `zoom`, `splice`, `push`, `mask`, `whip` or `glitch`.
+brand and a way in: `cut`, `slide`, `fade`, `zoom`, `splice`, `push`, `mask`, `whip`, `glitch` or `match`.
 
 <p align="center">
   <picture>
