@@ -79,5 +79,5 @@ Give the paths: `<name>-square.mp4`, `-vertical.mp4`, `-landscape.mp4`, `<name>.
 
 - Remotion is free for individuals and companies of up to 3 people; bigger companies need a licence (remotion.dev/license).
 - Kokoro voices: `af_heart` (default), `af_bella`, `am_michael`, `am_fenrir`, `bf_emma`, `bm_george` and more; `voice.speed` 0.9 to 1.1.
-- To change the look for every video, edit `template/src/scenes.tsx` (layouts) and `template/src/ui.tsx` (motion, colours). Each scene lays itself out from the frame size, so check all three shapes after a change.
+- To change the look for every video, edit `template/src/scenes.tsx` (layouts), `template/src/ui.tsx` (motion, colours) and `template/src/transitions.tsx` (ways in and out; add a name there and to `WAYS` in `build.mjs`). Each scene lays itself out from the frame size, so check all three shapes after a change.
 - The skill runs on the default network of Claude's cloud sessions: npm, PyPI, GitHub releases and Google Fonts. It uses the Chromium already installed there.

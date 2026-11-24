@@ -1,32 +1,9 @@
 import React from 'react';
-import {AbsoluteFill, Audio, Sequence, interpolate, useCurrentFrame, useVideoConfig, Easing} from 'remotion';
-import type {Props, Scene} from './types';
-import {BrandContext, asset, sceneColors, useBrand, useFonts} from './ui';
+import {AbsoluteFill, Audio, Sequence, interpolate, useCurrentFrame} from 'remotion';
+import type {Props} from './types';
+import {BrandContext, asset, sceneColors, useFonts} from './ui';
+import {OVERLAP, Transitioned} from './transitions';
 import {SCENES} from './scenes';
-
-const Enter: React.FC<{scene: Scene; children: React.ReactNode}> = ({scene, children}) => {
-  const frame = useCurrentFrame();
-  const b = useBrand();
-  if (scene.enter === 'splice') {
-    // a splice: the new scene wipes in behind a bar of the accent colour, like tape across a cut
-    const w = interpolate(frame, [0, 10], [0, 1], {extrapolateRight: 'clamp', easing: Easing.inOut(Easing.cubic)});
-    const bar = 0.06;
-    return (
-      <AbsoluteFill>
-        <AbsoluteFill style={{clipPath: `inset(0 ${(1 - w) * 100}% 0 0)`}}>{children}</AbsoluteFill>
-        {w < 1 && <AbsoluteFill style={{left: `${w * 100 - bar * 100 * (1 - w)}%`, width: `${bar * 100}%`, background: b.accent}} />}
-      </AbsoluteFill>
-    );
-  }
-  const {width} = useVideoConfig();
-  const t = interpolate(frame, [0, 12], [0, 1], {extrapolateRight: 'clamp', easing: Easing.out(Easing.cubic)});
-  const style: React.CSSProperties =
-    scene.enter === 'slide' ? {transform: `translateX(${(1 - t) * width}px)`}
-      : scene.enter === 'fade' ? {opacity: t}
-        : scene.enter === 'zoom' ? {opacity: t, transform: `scale(${1.08 - 0.08 * t})`}
-          : {};
-  return <AbsoluteFill style={style}>{children}</AbsoluteFill>;
-};
 
 export const Video: React.FC<Props> = (p) => {
   useFonts(p.brand);
@@ -43,10 +20,10 @@ export const Video: React.FC<Props> = (p) => {
           const Comp = (SCENES as any)[s.type];
           const c = sceneColors(p.brand, s.bg);
           return (
-            <Sequence key={i} from={s.start} durationInFrames={s.dur + (i < p.scenes.length - 1 ? 12 : 0)} name={`${i + 1} ${s.type}`}>
-              <Enter scene={s}>
+            <Sequence key={i} from={s.start} durationInFrames={s.dur + (i < p.scenes.length - 1 ? OVERLAP : 0)} name={`${i + 1} ${s.type}`}>
+              <Transitioned scene={s} next={p.scenes[i + 1]}>
                 <AbsoluteFill style={{background: c.bg}}>{Comp ? <Comp scene={s} c={c} /> : null}</AbsoluteFill>
-              </Enter>
+              </Transitioned>
             </Sequence>
           );
         })}

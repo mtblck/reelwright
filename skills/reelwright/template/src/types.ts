@@ -20,7 +20,8 @@ export type Scene = {
   type: 'title' | 'statement' | 'screen' | 'features' | 'stat' | 'steps' | 'end' | 'kinetic' | 'reframe';
   start: number; // frame
   dur: number; // frames
-  enter: 'cut' | 'slide' | 'fade' | 'zoom' | 'splice';
+  enter: string; // a key of TRANSITIONS in transitions.tsx: cut, slide, fade, zoom, splice, push
+  enterOpts?: Record<string, any>; // from story `enter: {type, ...opts}`, e.g. {direction: 'up'}
   bg: 'paper' | 'dark' | 'brand';
   cues: number[]; // local frame where each phrase of the scene starts
   props: Record<string, any>;
