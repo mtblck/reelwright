@@ -11,6 +11,9 @@ version with the date and bumps `plugin.json` to match.
 
 ### Added
 
+- `zoom-pan` scene: a camera over one screenshot that eases to a new part of it on each phrase, never enlarging
+  past the point where small text goes soft. A `cursor` on `zoom-pan` and `screen` glides to one target per
+  phrase and clicks it with a ripple and a click sound ([#47](https://github.com/mtblck/reelwright/pull/47)).
 - Burned-in captions, on by default in the vertical and square cuts: a few words at a time, low in the frame and
   inside the TikTok, Reels and Shorts safe zones, with the word being said lit in the accent. `"captions"` in
   `story.json` turns them on for every cut, off, or picks the cuts; a scene can opt out

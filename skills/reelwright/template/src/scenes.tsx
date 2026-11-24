@@ -1,5 +1,6 @@
 import React from 'react';
 import {AbsoluteFill, Img, OffthreadVideo, interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
+import {CursorLayer, coverMap} from './product';
 import type {Scene} from './types';
 import {Emph, asset, font, mix, rise, sceneColors, ts, useBrand, useFade, useLayout, usePop} from './ui';
 import {useLook} from './looks';
@@ -133,9 +134,15 @@ export const Screen: React.FC<P> = ({scene, c}) => {
   const bw = landscape ? 1080 * u : vertical ? 960 * u : 900 * u;
   const bh = landscape ? 680 * u : vertical ? 1000 * u : 600 * u;
   const pw = (vertical ? 640 : landscape ? 410 : 380) * u;
+  // a cursor over the picture: its box is the device's screen, and the picture fills it as object-fit: cover does
+  const [iw, ih] = scene.props.mediaSize ?? [1, 1];
+  const [sw, sh] = phone ? [pw - 32 * u, pw * 2.16 - 32 * u] : [bw - 4 * u, bh - 60 * u];
+  const pointer = scene.props.cursor && scene.props.mediaSize ? (
+    <CursorLayer scene={scene} points={scene.props.cursor} w={sw} h={sh} map={coverMap(iw, ih, sw, sh, scene.props.video ? 'top' : scene.props.position === 'center' ? 'center' : 'top', scene.props.video ? 1 : Number(zoom))} />
+  ) : null;
   const device = phone ? (
     <div style={{width: pw, height: pw * 2.16, borderRadius: 64 * u, padding: 16 * u, background: '#0b0b0c', boxShadow: `0 ${30 * u}px ${80 * u}px ${mix(b.dark, '#000000', 0.5)}55`}}>
-      <div style={{width: '100%', height: '100%', borderRadius: 50 * u, overflow: 'hidden', background: b.paper}}>{media}</div>
+      <div style={{width: '100%', height: '100%', borderRadius: 50 * u, overflow: 'hidden', background: b.paper, position: 'relative'}}>{media}{pointer}</div>
     </div>
   ) : (
     <div style={{width: bw, height: bh, borderRadius: r, overflow: 'hidden', background: b.paper, border: `${2 * u}px solid ${mix(c.ink, c.bg, 0.85)}`, boxShadow: `0 ${30 * u}px ${80 * u}px #00000030`, display: 'flex', flexDirection: 'column'}}>
@@ -143,7 +150,7 @@ export const Screen: React.FC<P> = ({scene, c}) => {
         {[0, 1, 2].map((i) => <div key={i} style={{width: 16 * u, height: 16 * u, borderRadius: 99, background: mix(b.ink, b.paper, 0.7)}} />)}
         {scene.props.url && <div style={{...font(b.text), marginLeft: 20 * u, flex: 1, height: 34 * u, borderRadius: 99, background: b.paper, fontSize: ts(20 * u), color: mix(b.ink, b.paper, 0.45), display: 'flex', alignItems: 'center', paddingLeft: 20 * u}}>{scene.props.url}</div>}
       </div>
-      <div style={{flex: 1, overflow: 'hidden'}}>{media}</div>
+      <div style={{flex: 1, overflow: 'hidden', position: 'relative'}}>{media}{pointer}</div>
     </div>
   );
   // A phone is too tall to stack under a caption in a square frame, so it sits beside it there too.

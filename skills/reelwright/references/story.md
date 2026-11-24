@@ -39,7 +39,8 @@ Each phrase in `say` starts the next reveal. Give a scene as many phrases as it 
 |---|---|---|
 | `statement` | `text`*, `kicker` | 1: the text, word by word |
 | `title` | `name` (default brand name), `tagline` (default brand tagline) | 1: mark and name; 2: tagline |
-| `screen` | `image` or `video`*, `frame` (`phone` or `browser`), `caption`*, `url` (browser bar), `zoom` (`[from, to]` for a slow push on an image), `position` (CSS `object-position`) | 1: device rises in and the caption types on |
+| `screen` | `image` or `video`*, `frame` (`phone` or `browser`), `caption`*, `url` (browser bar), `zoom` (`[from, to]` for a slow push on an image), `position` (CSS `object-position`), `cursor` | 1: device rises in and the caption types on |
+| `zoom-pan` | `image`* (one screenshot, as large as you have), `focus` (one per phrase: `[x, y, w, h]` as fractions of the picture from its top left, or `null` for the whole picture), `caption`, `cursor` | 1: the picture rises in; each phrase: the camera eases to that phrase's focus. The camera never blows a pixel up past 1.25x, so small text stays sharp; take the screenshot at 2x. In the vertical cut a wide screenshot is cropped, so give every phrase a focus |
 | `features` | `title`*, `items`* (2 to 4 short lines) | 1: title; 2, 3, 4...: each item with a tick |
 | `steps` | `title`, `steps`* (2 to 4) | 1: title (if any); then each step |
 | `stat` | `value`* (`"1.3 s"`, `"12,000+"`, `"0"`), `label`* | 1: the number counts up; 2: the label |
@@ -51,6 +52,7 @@ Each phrase in `say` starts the next reveal. Give a scene as many phrases as it 
 
 Screen captures: a phone clip from `capture.mjs --device phone --clip` fits the `phone` frame; a desktop screenshot fits `browser`. Videos play muted.
 
+**Cursor** (`screen` and `zoom-pan`): `cursor` is one target per phrase, `[x, y]` as fractions of the picture, or `null` for none. The cursor glides in from the lower right to each target as its phrase starts and clicks it (with a ripple and a click) two-thirds of a second later. It follows the picture as the camera moves. Find targets by opening the screenshot and measuring: a button at 1195, 598 in a 2000 x 1250 picture is `[0.6, 0.48]`.
 ## Templates
 
 **App launch** (25 to 35 s): `statement` the problem (dark) → `title` meet it → `screen` it doing the job (dark) → `features` three reasons → `stat` one proof (dark) → `end`.
