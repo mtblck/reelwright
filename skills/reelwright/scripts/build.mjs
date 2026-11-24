@@ -13,7 +13,7 @@ const LEAD = 0.25; // seconds from a scene's cut to its first word
 const PAUSE = 0.3; // between phrases inside a scene
 const GAP = 0.45; // after a scene's last phrase, before the next cut
 const TAIL = 1.4; // extra hold on the last scene
-const WAYS = ['cut', 'slide', 'fade', 'zoom', 'splice', 'push']; // the keys of TRANSITIONS in template/src/transitions.tsx
+const WAYS = ['cut', 'slide', 'fade', 'zoom', 'splice', 'push', 'mask']; // the keys of TRANSITIONS in template/src/transitions.tsx
 const MIN = {title: 2.2, statement: 2, screen: 3, features: 3, stat: 2.4, steps: 3, end: 2.6, kinetic: 1.2, reframe: 3};
 
 const SKILL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');

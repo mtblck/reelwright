@@ -14,6 +14,9 @@ version with the date and bumps `plugin.json` to match.
 - Cuts land on the music's beat, and the video ends on a bar line so the last chord meets the end card. Whole scenes
   move, so each phrase keeps its place against its reveal. `"beatSync": false` turns it off; a custom `music.file`
   opts in with `music.bpm` ([#39](https://github.com/mtblck/reelwright/pull/39)).
+- `mask` way in: the new scene opens through the brand's own mark, an aspect frame edged in the accent, or a circle,
+  growing from the centre while the old scene pushes in and darkens, with no sound effect, e.g. `"enter": {"type": "mask", "shape": "frame",
+  "aspect": "16:9"}` ([#41](https://github.com/mtblck/reelwright/pull/41)).
 - `push` way in: the new scene shoves the old one off, in any of four directions with
   `"enter": {"type": "push", "direction": "up"}` ([#40](https://github.com/mtblck/reelwright/pull/40)).
 
