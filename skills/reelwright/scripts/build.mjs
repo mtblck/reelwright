@@ -13,6 +13,7 @@ const LEAD = 0.25; // seconds from a scene's cut to its first word
 const PAUSE = 0.3; // between phrases inside a scene
 const GAP = 0.45; // after a scene's last phrase, before the next cut
 const TAIL = 1.4; // extra hold on the last scene
+const WAYS = ['cut', 'slide', 'fade', 'zoom', 'splice', 'push']; // the keys of TRANSITIONS in template/src/transitions.tsx
 const MIN = {title: 2.2, statement: 2, screen: 3, features: 3, stat: 2.4, steps: 3, end: 2.6, kinetic: 1.2, reframe: 3};
 
 const SKILL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -151,7 +152,10 @@ story.scenes.forEach((s, i) => {
     len = end - t;
   }
   const {type, say, enter, bg, hold, ...props} = s;
-  scenes.push({type, start: f(t), dur: f(len), enter: enter ?? (i === 0 ? 'cut' : 'slide'), bg: bg ?? 'paper', cues, props});
+  // enter is a name ("push") or a name with options ({"type": "push", "direction": "up"})
+  const {type: way = i === 0 ? 'cut' : 'slide', ...enterOpts} = typeof enter === 'object' && enter ? enter : {type: enter ?? undefined};
+  if (!WAYS.includes(way)) throw new Error(`scene ${i + 1}: enter "${way}" is not one of ${WAYS.join(', ')}`);
+  scenes.push({type, start: f(t), dur: f(len), enter: way, ...(Object.keys(enterOpts).length ? {enterOpts} : {}), bg: bg ?? 'paper', cues, props});
   t += len;
 });
 for (const [a, b] of scenes.slice(0, -1).map((s, i) => [s, scenes[i + 1]])) a.dur = b.start - a.start;
@@ -179,7 +183,7 @@ const add = (name, at, volume) => {
   sfx.push({src: copy(path.join(SFX, `${name}.wav`), 'sfx'), at: Math.max(0, at), volume});
 };
 for (const s of scenes) {
-  if (s.enter === 'slide' || s.enter === 'zoom' || s.enter === 'splice') add('whoosh', s.start - 4, 0.175);
+  if (['slide', 'zoom', 'splice', 'push'].includes(s.enter)) add('whoosh', s.start - 4, 0.175);
   if (s.type === 'reframe') { s.cues.slice(1, (s.props.shapes ?? []).length).forEach((c) => add('whoosh', s.start + c - 3, 0.15)); if (s.cues.length > (s.props.shapes ?? []).length) add('rise', s.start + s.cues[(s.props.shapes ?? []).length] - 6, 0.4); }
   if (s.type === 'features') s.cues.slice(1).forEach((c) => add('tick', s.start + c, 0.45));
   if (s.type === 'steps') s.cues.slice(s.props.title ? 1 : 0).forEach((c) => add('tick', s.start + c, 0.45));

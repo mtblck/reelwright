@@ -9,8 +9,18 @@ version with the date and bumps `plugin.json` to match.
 
 ## [Unreleased]
 
+### Added
+
+- Cuts land on the music's beat, and the video ends on a bar line so the last chord meets the end card. Whole scenes
+  move, so each phrase keeps its place against its reveal. `"beatSync": false` turns it off; a custom `music.file`
+  opts in with `music.bpm` ([#39](https://github.com/mtblck/reelwright/pull/39)).
+- `push` way in: the new scene shoves the old one off, in any of four directions with
+  `"enter": {"type": "push", "direction": "up"}` ([#40](https://github.com/mtblck/reelwright/pull/40)).
+
 ### Changed
 
+- Transitions have two sides: the scene going out can move too, not only the one coming in. Each way in is one
+  entry in `template/src/transitions.tsx` ([#40](https://github.com/mtblck/reelwright/pull/40)).
 - The README has a new look: the logo in light and dark, Reelwright's own promo reel as the hero, the three cuts,
   a still of every scene type and what each output is for. Its images live in `.github/readme/`, with a social
   preview image for the repo page.
