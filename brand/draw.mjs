@@ -27,14 +27,16 @@ const mark = (ink, acc) => ({ body: markBody(ink, acc), w: bb.w, h: bb.h })
 write(out('mark.svg'), svg({ w: bb.w, h: bb.h, title: 'Reelwright', body: markBody(C.emulsion, C.tungsten) }))
 write(out('mark-dark.svg'), svg({ w: bb.w, h: bb.h, title: 'Reelwright', body: markBody(C.leader, C.tungsten) }))
 
-// Favicon: at 16 px a 16-unit band is one pixel, so the small version fills the
-// square (the 1:1 cut) in Tungsten and thickens the bands to 28, on an Emulsion tile.
+// Favicon: Matt's pixel drawing, a 1 px line on a 16 × 16 grid. Tall frame
+// 6 × 12, wide frame 12 × 6, square 8 × 8 on top in Tungsten, all centred.
+// No tile: in a dark tab the frames switch to Leader via the SVG's own media query.
 {
-  const s = 28, w = 112, h = 200, sq = w + 2 * s
-  const fr = (fw, fh) => subtract(rect(128 - fw / 2, 128 - fh / 2, fw, fh, 14), rect(128 - fw / 2 + s, 128 - fh / 2 + s, fw - 2 * s, fh - 2 * s, 0))
-  const lines = union(fr(w, h), fr(h, w))
-  const fill = subtract(rect(128 - sq / 2, 128 - sq / 2, sq, sq, 14), lines)
-  write(out('favicon.svg'), svg({ w: 256, h: 256, title: 'Reelwright', body: `<rect width="256" height="256" rx="56" fill="${C.emulsion}"/><g transform="translate(128 128) scale(0.8) translate(-128 -128)"><path d="${fill}" fill="${C.tungsten}"/><path d="${lines}" fill="${C.leader}"/></g>` }))
+  const px = (x, y, w, h) => `M${x} ${y}h${w}v${h}h${-w}Z`
+  const fr = (x, y, w, h) => px(x, y, w, h) + px(x + 1, y + 1, w - 2, h - 2)
+  const lines = union(fr(5, 2, 6, 12), fr(2, 5, 12, 6))
+  const sq = fr(4, 4, 8, 8)
+  const style = `<style>.l{fill:${C.emulsion}}@media (prefers-color-scheme: dark){.l{fill:${C.leader}}}</style>`
+  write(out('favicon.svg'), svg({ w: 16, h: 16, title: 'Reelwright', body: `${style}<g shape-rendering="crispEdges"><path class="l" d="${lines}" fill-rule="evenodd"/><path d="${sq}" fill="${C.tungsten}" fill-rule="evenodd"/></g>` }))
 }
 
 const font = await loadFont('Familjen Grotesk', 700)
