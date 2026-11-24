@@ -29,6 +29,9 @@ export type Scene = {
   props: Record<string, any>;
 };
 
+// burned-in captions: short lines of a few words, each word with the frames it's spoken over
+export type Captions = {formats: string[]; lines: {from: number; to: number; words: {t: string; from: number; to: number}[]}[]};
+
 export type Sfx = {src: string; at: number; volume?: number};
 
 export type Props = {
@@ -40,5 +43,6 @@ export type Props = {
   music: {src: string; volume: number} | null;
   speech: [number, number][]; // frames where the voice is speaking, for ducking
   sfx: Sfx[];
+  captions?: Captions | null;
   durationInFrames: number;
 };
