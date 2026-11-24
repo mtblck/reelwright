@@ -2,8 +2,8 @@ import React from 'react';
 import {AbsoluteFill, Img, OffthreadVideo, interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
 import {CursorLayer, coverMap} from './product';
 import type {Scene} from './types';
-import {Emph, asset, font, mix, rise, sceneColors, ts, useBrand, useFade, useLayout, usePop} from './ui';
-import {useLook} from './looks';
+import {Emph, Scribble, asset, font, mix, rise, sceneColors, ts, useBrand, useFade, useLayout, usePop} from './ui';
+import {useLook, useTilt} from './looks';
 
 type C = ReturnType<typeof sceneColors>;
 type P = {scene: Scene; c: C};
@@ -68,7 +68,8 @@ export const Words: React.FC<{text: string; at: number; size: number; color: str
         const hot = star || open;
         star = open ? !close : star && !close;
         const p = interpolate(frame, [at + i * step, at + i * step + 7], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
-        return <span key={i} style={{display: 'inline-block', marginRight: '0.24em', opacity: p, transform: `translateY(${(1 - p) * 0.25}em)`, color: hot ? accent : color}}>{w.replace(/\*/g, '')}</span>;
+        const m = look.marker && hot ? interpolate(frame, [at + i * step + 6, at + i * step + 16], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}) : 0;
+        return <span key={i} style={{display: 'inline-block', marginRight: '0.24em', opacity: p, transform: `translateY(${(1 - p) * 0.25}em)`, color: hot ? accent : color}}>{look.marker && hot ? <Scribble color={accent} p={m}>{w.replace(/\*/g, '')}</Scribble> : w.replace(/\*/g, '')}</span>;
       })}
     </div>
   );
@@ -156,7 +157,8 @@ export const Screen: React.FC<P> = ({scene, c}) => {
   // A phone is too tall to stack under a caption in a square frame, so it sits beside it there too.
   const side = phone && !vertical;
   const caption = <Words text={scene.props.caption} at={cue(scene) + 4} size={(landscape ? 76 : 72) * u} color={c.ink} accent={b.accent} align={side ? 'left' : 'center'} />;
-  const dev = <div style={{transform: `translateY(${(1 - p) * 160 * u}px) scale(${0.92 + 0.08 * p})`, opacity: Math.min(1, p * 2)}}>{device}</div>;
+  const tilt = useTilt();
+  const dev = <div style={{transform: `translateY(${(1 - p) * 160 * u}px) scale(${0.92 + 0.08 * p}) ${tilt}`, opacity: Math.min(1, p * 2)}}>{device}</div>;
   return side ? (
     <AbsoluteFill style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: (landscape ? 100 : 70) * u, padding: 80 * u}}>
       <div style={{flex: 1, minWidth: 0, maxWidth: 900 * u}}>{caption}</div>
@@ -183,17 +185,18 @@ export const Features: React.FC<P> = ({scene, c}) => {
         <Emph text={scene.props.title} color={b.accent} />
       </div>
       <div style={{display: 'flex', flexDirection: 'column', gap: 30 * k * u}}>
-        {items.map((it, i) => <Item key={i} text={it} at={cue(scene, i + 1)} c={c} k={k} />)}
+        {items.map((it, i) => <Item key={i} text={it} at={cue(scene, i + 1)} c={c} k={k} n={i} />)}
       </div>
     </AbsoluteFill>
   );
 };
-const Item: React.FC<{text: string; at: number; c: C; k: number}> = ({text, at, c, k}) => {
+const Item: React.FC<{text: string; at: number; c: C; k: number; n?: number}> = ({text, at, c, k, n = 0}) => {
   const b = useBrand();
   const {u} = useLayout();
   const p = usePop(at, 12);
+  const tilt = useTilt(n);
   return (
-    <div style={{display: 'flex', alignItems: 'center', gap: 28 * u, opacity: Math.min(1, p * 1.5), transform: `translateX(${(1 - p) * -60 * u}px)`}}>
+    <div style={{display: 'flex', alignItems: 'center', gap: 28 * u, opacity: Math.min(1, p * 1.5), transform: `translateX(${(1 - p) * -60 * u}px) ${tilt}`, ...(tilt ? {background: c.card, borderRadius: (b.radius ?? 20) * u, padding: `${20 * u}px ${28 * u}px`, boxShadow: `0 ${18 * u}px ${40 * u}px #00000022`} : {})}}>
       <div style={{width: 64 * k * u, height: 64 * k * u, flex: 'none', borderRadius: 99, background: b.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `scale(${p})`}}>
         <svg viewBox="0 0 24 24" width={34 * k * u} height={34 * k * u}><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke={b.dark} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
       </div>
@@ -252,8 +255,9 @@ const Step: React.FC<{n: number; text: string; at: number; c: C}> = ({n, text, a
   const b = useBrand();
   const {u} = useLayout();
   const p = usePop(at, 13);
+  const tilt = useTilt(n - 1);
   return (
-    <div style={{flex: 1, ...rise(p, u, 50), background: c.card, borderRadius: (b.radius ?? 20) * u, padding: `${34 * u}px ${36 * u}px`, display: 'flex', alignItems: 'center', gap: 28 * u}}>
+    <div style={{flex: 1, ...rise(p, u, 50), ...(tilt ? {transform: `translateY(${(1 - p) * 50 * u}px) ${tilt}`, boxShadow: `0 ${18 * u}px ${40 * u}px #00000022`} : {}), background: c.card, borderRadius: (b.radius ?? 20) * u, padding: `${34 * u}px ${36 * u}px`, display: 'flex', alignItems: 'center', gap: 28 * u}}>
       <div style={{...font(b.display), fontSize: ts(72 * u), color: b.accent, lineHeight: 1}}>{n}</div>
       <div style={{...font(b.text), fontSize: ts(44 * u), color: c.ink, fontWeight: 600, lineHeight: 1.15}}><Emph text={text} color={b.accent} /></div>
     </div>

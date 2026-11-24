@@ -11,6 +11,10 @@ version with the date and bumps `plugin.json` to match.
 
 ### Added
 
+- Five looks: `poster` (capitals, a slab of colour, huge cropped scene numbers, hard cuts), `blueprint` (grid paper,
+  crop marks and a dimension line drawn on), `paper` (12 fps stop motion, paper grain, a torn edge), `sketch` (boiling
+  lines, marker scribbles under starred words) and `isometric` (devices and cards tilted in 3D)
+  ([#50](https://github.com/mtblck/reelwright/pull/50)).
 - Trailer moves: `accelerate` on `kinetic` makes each beat land quicker than the last, `stinger` on `end` adds a
   last line after a beat of dark, and `"music": {"end": "tapestop"}` stops the bed like a tape instead of fading it.
   The story templates now open cold, with the hook before the title.

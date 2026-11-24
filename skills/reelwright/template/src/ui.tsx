@@ -1,6 +1,7 @@
 import React, {createContext, useContext, useEffect, useState} from 'react';
 import {continueRender, delayRender, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig, Easing} from 'remotion';
 import type {Brand, Scene} from './types';
+import {useLook} from './looks';
 
 export const BrandContext = createContext<Brand | null>(null);
 export const useBrand = () => useContext(BrandContext)!;
@@ -42,8 +43,19 @@ export const useFade = (at: number, len = 8) => {
 export const rise = (p: number, u: number, d = 40) => ({opacity: Math.min(1, p * 1.4), transform: `translateY(${(1 - p) * d * u}px)`});
 
 // "Fill your *calendar*" -> the starred words in the accent colour.
-export const Emph: React.FC<{text: string; color: string}> = ({text, color}) => (
-  <>{text.split(/(\*[^*]+\*)/).map((s, i) => (s.startsWith('*') && s.endsWith('*') ? <span key={i} style={{color}}>{s.slice(1, -1)}</span> : <React.Fragment key={i}>{s}</React.Fragment>))}</>
+export const Emph: React.FC<{text: string; color: string}> = ({text, color}) => {
+  const marker = useLook().marker;
+  return <>{text.split(/(\*[^*]+\*)/).map((s, i) => (s.startsWith('*') && s.endsWith('*') ? <span key={i} style={{color}}>{marker ? <Scribble color={color}>{s.slice(1, -1)}</Scribble> : s.slice(1, -1)}</span> : <React.Fragment key={i}>{s}</React.Fragment>))}</>;
+};
+
+// a marker line scribbled under a word (the sketch look); p draws it on from the left
+export const Scribble: React.FC<{color: string; p?: number; children: React.ReactNode}> = ({color, p = 1, children}) => (
+  <span style={{position: 'relative', display: 'inline-block'}}>
+    {children}
+    <svg viewBox="0 0 100 24" preserveAspectRatio="none" style={{position: 'absolute', left: '-3%', width: '106%', bottom: '-0.2em', height: '0.34em', overflow: 'visible'}}>
+      <path d="M2 12 C 22 6, 48 16, 98 7 M5 18 C 36 11, 66 19, 95 13" fill="none" stroke={color} strokeWidth={0.09} strokeLinecap="round" style={{strokeWidth: '0.09em'}} vectorEffect="non-scaling-stroke" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - p} opacity={0.85} />
+    </svg>
+  </span>
 );
 
 // Fonts: build.mjs saves the brand's Google Fonts into public/fonts; wait for them before the first frame.

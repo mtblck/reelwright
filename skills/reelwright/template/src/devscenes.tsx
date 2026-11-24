@@ -3,6 +3,7 @@ import {AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig} from 'remoti
 import type {Scene} from './types';
 import {font, mix, sceneColors, ts, useBrand, useLayout, usePop} from './ui';
 import {Typed, Words} from './scenes';
+import {useTilt} from './looks';
 
 // Scenes for projects with no app to film: a terminal session and a code snippet, each in a window.
 // Both read real material: a terminal transcript recorded by scripts/term.mjs, and code from a file in
@@ -27,9 +28,10 @@ const Window: React.FC<{title?: string; at: number; w: number; children: React.R
   const b = useBrand();
   const {u} = useLayout();
   const p = usePop(at, 16);
+  const tilt = useTilt();
   const bg = mix(b.dark, '#000000', 0.35);
   return (
-    <div style={{width: w, borderRadius: 18 * u, overflow: 'hidden', background: bg, border: `${2 * u}px solid ${mix(b.paper, bg, 0.85)}`, boxShadow: `0 ${30 * u}px ${80 * u}px #00000040`, transform: `translateY(${(1 - p) * 120 * u}px) scale(${0.94 + 0.06 * p})`, opacity: Math.min(1, p * 2)}}>
+    <div style={{width: w, borderRadius: 18 * u, overflow: 'hidden', background: bg, border: `${2 * u}px solid ${mix(b.paper, bg, 0.85)}`, boxShadow: `0 ${30 * u}px ${80 * u}px #00000040`, transform: `translateY(${(1 - p) * 120 * u}px) scale(${0.94 + 0.06 * p}) ${tilt}`, opacity: Math.min(1, p * 2)}}>
       <div style={{height: 52 * u, display: 'flex', alignItems: 'center', gap: 11 * u, padding: `0 ${22 * u}px`, background: mix(b.paper, bg, 0.92)}}>
         {[0, 1, 2].map((i) => <div key={i} style={{width: 15 * u, height: 15 * u, borderRadius: 99, background: mix(b.paper, bg, 0.7)}} />)}
         {title && <div style={{...font(b.mono ?? b.text), flex: 1, textAlign: 'center', marginRight: 60 * u, fontSize: ts(20 * u), color: mix(b.paper, bg, 0.45)}}>{title}</div>}
