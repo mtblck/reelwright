@@ -13,7 +13,7 @@ const LEAD = 0.25; // seconds from a scene's cut to its first word
 const PAUSE = 0.3; // between phrases inside a scene
 const GAP = 0.45; // after a scene's last phrase, before the next cut
 const TAIL = 1.4; // extra hold on the last scene
-const WAYS = ['cut', 'slide', 'fade', 'zoom', 'splice', 'push', 'mask']; // the keys of TRANSITIONS in template/src/transitions.tsx
+const WAYS = ['cut', 'slide', 'fade', 'zoom', 'splice', 'push', 'mask', 'whip', 'glitch']; // the keys of TRANSITIONS in template/src/transitions.tsx
 // names and default ways in of LOOKS in template/src/looks.tsx; `mono` swaps the brand's fonts for a mono face, set smaller (it runs wider)
 const LOOKS = {clean: {enter: 'slide'}, film: {enter: 'splice'}, terminal: {enter: 'cut', mono: {family: 'JetBrains Mono', display: 800, text: 400, scale: 0.72}}};
 const MIN = {title: 2.2, statement: 2, screen: 3, features: 3, stat: 2.4, steps: 3, end: 2.6, kinetic: 1.2, reframe: 3, terminal: 3.5, code: 3.5};
@@ -166,6 +166,7 @@ story.scenes.forEach((s, i) => {
   scenes.push({type, start: f(t), dur: f(len), enter: way, ...(Object.keys(enterOpts).length ? {enterOpts} : {}), bg: bg ?? 'paper', cues, props});
   t += len;
 });
+if (scenes.filter((s) => s.enter === 'glitch').length > 1) console.warn('note: more than one glitch; it lands hardest once per video');
 for (const [a, b] of scenes.slice(0, -1).map((s, i) => [s, scenes[i + 1]])) a.dur = b.start - a.start;
 const total = scenes.at(-1).start + scenes.at(-1).dur;
 
@@ -202,7 +203,8 @@ const add = (name, at, volume) => {
   sfx.push({src: copy(path.join(SFX, `${name}.wav`), 'sfx'), at: Math.max(0, at), volume});
 };
 for (const s of scenes) {
-  if (['slide', 'zoom', 'splice', 'push'].includes(s.enter)) add('whoosh', s.start - 4, 0.175);
+  if (['slide', 'zoom', 'splice', 'push', 'whip'].includes(s.enter)) add('whoosh', s.start - 4, 0.175);
+  if (s.enter === 'glitch') add('glitch', s.start, 0.15);
   if (s.type === 'reframe') { s.cues.slice(1, (s.props.shapes ?? []).length).forEach((c) => add('whoosh', s.start + c - 3, 0.15)); if (s.cues.length > (s.props.shapes ?? []).length) add('rise', s.start + s.cues[(s.props.shapes ?? []).length] - 6, 0.4); }
   if (s.type === 'features') s.cues.slice(1).forEach((c) => add('tick', s.start + c, 0.45));
   if (s.type === 'steps') s.cues.slice(s.props.title ? 1 : 0).forEach((c) => add('tick', s.start + c, 0.45));
