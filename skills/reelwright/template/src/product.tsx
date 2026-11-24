@@ -106,7 +106,7 @@ export const ZoomPan: React.FC<P> = ({scene, c}) => {
   return (
     <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', gap: 48 * u}}>
       {caption && <div style={{maxWidth: vw}}><Words text={caption} at={cue(scene) + 4} size={(landscape ? 64 : 62) * u} color={c.ink} accent={b.accent} /></div>}
-      <div style={{width: vw, height: vh, position: 'relative', borderRadius: r, overflow: 'hidden', background: b.paper, border: `${2 * u}px solid ${mix(c.ink, c.bg, 0.85)}`, boxShadow: `0 ${30 * u}px ${80 * u}px #00000030`, transform: `translateY(${(1 - p) * 140 * u}px) scale(${0.94 + 0.06 * p}) ${tilt}`, opacity: Math.min(1, p * 2)}}>
+      <div data-match style={{width: vw, height: vh, position: 'relative', borderRadius: r, overflow: 'hidden', background: b.paper, border: `${2 * u}px solid ${mix(c.ink, c.bg, 0.85)}`, boxShadow: `0 ${30 * u}px ${80 * u}px #00000030`, transform: `translateY(${(1 - p) * 140 * u}px) scale(${0.94 + 0.06 * p}) ${tilt}`, opacity: Math.min(1, p * 2)}}>
         <Img src={asset(scene.props.image)} style={{position: 'absolute', left: 0, top: 0, width: iw, height: ih, maxWidth: 'none', transformOrigin: '0 0', transform: `translate(${vw / 2 - cam.x * s}px, ${vh / 2 - cam.y * s}px) scale(${s})`}} />
         {scene.props.cursor && <CursorLayer scene={scene} points={scene.props.cursor} map={map} w={vw} h={vh} />}
       </div>

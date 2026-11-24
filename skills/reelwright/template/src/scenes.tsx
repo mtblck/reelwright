@@ -78,7 +78,7 @@ export const Words: React.FC<{text: string; at: number; size: number; color: str
 const Mark: React.FC<{src?: string; size: number; at?: number}> = ({src, size, at = 0}) => {
   const p = usePop(at, 11);
   if (!src) return null;
-  return <Img src={asset(src)} style={{width: size, height: size, transform: `scale(${p}) rotate(${(1 - p) * -8}deg)`}} />;
+  return <Img data-match src={asset(src)} style={{width: size, height: size, transform: `scale(${p}) rotate(${(1 - p) * -8}deg)`}} />;
 };
 
 // title: mark pops, name, tagline.  props: {name?, tagline?}
@@ -142,11 +142,11 @@ export const Screen: React.FC<P> = ({scene, c}) => {
     <CursorLayer scene={scene} points={scene.props.cursor} w={sw} h={sh} map={coverMap(iw, ih, sw, sh, scene.props.video ? 'top' : scene.props.position === 'center' ? 'center' : 'top', scene.props.video ? 1 : Number(zoom))} />
   ) : null;
   const device = phone ? (
-    <div style={{width: pw, height: pw * 2.16, borderRadius: 64 * u, padding: 16 * u, background: '#0b0b0c', boxShadow: `0 ${30 * u}px ${80 * u}px ${mix(b.dark, '#000000', 0.5)}55`}}>
+    <div data-match style={{width: pw, height: pw * 2.16, borderRadius: 64 * u, padding: 16 * u, background: '#0b0b0c', boxShadow: `0 ${30 * u}px ${80 * u}px ${mix(b.dark, '#000000', 0.5)}55`}}>
       <div style={{width: '100%', height: '100%', borderRadius: 50 * u, overflow: 'hidden', background: b.paper, position: 'relative'}}>{media}{pointer}</div>
     </div>
   ) : (
-    <div style={{width: bw, height: bh, borderRadius: r, overflow: 'hidden', background: b.paper, border: `${2 * u}px solid ${mix(c.ink, c.bg, 0.85)}`, boxShadow: `0 ${30 * u}px ${80 * u}px #00000030`, display: 'flex', flexDirection: 'column'}}>
+    <div data-match style={{width: bw, height: bh, borderRadius: r, overflow: 'hidden', background: b.paper, border: `${2 * u}px solid ${mix(c.ink, c.bg, 0.85)}`, boxShadow: `0 ${30 * u}px ${80 * u}px #00000030`, display: 'flex', flexDirection: 'column'}}>
       <div style={{height: 56 * u, flex: 'none', display: 'flex', alignItems: 'center', gap: 12 * u, padding: `0 ${22 * u}px`, background: mix(b.ink, b.paper, 0.93)}}>
         {[0, 1, 2].map((i) => <div key={i} style={{width: 16 * u, height: 16 * u, borderRadius: 99, background: mix(b.ink, b.paper, 0.7)}} />)}
         {scene.props.url && <div style={{...font(b.text), marginLeft: 20 * u, flex: 1, height: 34 * u, borderRadius: 99, background: b.paper, fontSize: ts(20 * u), color: mix(b.ink, b.paper, 0.45), display: 'flex', alignItems: 'center', paddingLeft: 20 * u}}>{scene.props.url}</div>}
@@ -385,7 +385,7 @@ export const Reframe: React.FC<P> = ({scene, c}) => {
   const frameW = box.w + (L - box.w) * asm; // the screen frame becomes the mark's wide frame
   return (
     <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center'}}>
-      <div style={{position: 'relative', width: frameW, height: box.h + ((L * 9) / 16 - box.h) * asm, transform: `scale(${0.85 + 0.15 * intro})`, opacity: Math.min(1, intro * 2)}}>
+      <div data-match style={{position: 'relative', width: frameW, height: box.h + ((L * 9) / 16 - box.h) * asm, transform: `scale(${0.85 + 0.15 * intro})`, opacity: Math.min(1, intro * 2)}}>
         <div style={{position: 'absolute', inset: 0, borderRadius: (b.radius ?? 20) * u * (1 - asm), overflow: 'hidden', background: c.card, opacity: mediaOp, boxShadow: `0 ${30 * u}px ${90 * u}px #00000055`}}>
           {shapes.map((sh, i) => {
             const op = Math.max(0, 1 - Math.abs(s - i) * 1.6);

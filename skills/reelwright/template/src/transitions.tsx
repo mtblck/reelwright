@@ -86,6 +86,9 @@ export const TRANSITIONS: Record<string, Transition> = {
       );
     },
   },
+  // match: the old scene's main shape becomes the new scene's (MatchLayer in match.tsx draws the move);
+  // here the new scene just waits underneath until the shape has landed
+  match: {len: 18, ease: (t) => t, in: (p, c) => wrap({opacity: p < 0.8 ? 0 : 1}, c)},
   // whip: a fast pan, both scenes smeared along the move by a directional blur that peaks mid-move.
   // opts.direction as push. The blur is an SVG filter, so the scene is drawn once per frame.
   whip: {
