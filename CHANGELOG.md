@@ -15,7 +15,7 @@ version with the date and bumps `plugin.json` to match.
   move, so each phrase keeps its place against its reveal. `"beatSync": false` turns it off; a custom `music.file`
   opts in with `music.bpm` ([#39](https://github.com/mtblck/reelwright/pull/39)).
 - `mask` way in: the new scene opens through the brand's own mark, an aspect frame edged in the accent, or a circle,
-  growing from the centre while the old scene pushes in and darkens, e.g. `"enter": {"type": "mask", "shape": "frame",
+  growing from the centre while the old scene pushes in and darkens, with no sound effect, e.g. `"enter": {"type": "mask", "shape": "frame",
   "aspect": "16:9"}` ([#41](https://github.com/mtblck/reelwright/pull/41)).
 - `push` way in: the new scene shoves the old one off, in any of four directions with
   `"enter": {"type": "push", "direction": "up"}` ([#40](https://github.com/mtblck/reelwright/pull/40)).

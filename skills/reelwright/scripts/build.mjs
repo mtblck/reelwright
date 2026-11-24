@@ -184,7 +184,6 @@ const add = (name, at, volume) => {
 };
 for (const s of scenes) {
   if (['slide', 'zoom', 'splice', 'push'].includes(s.enter)) add('whoosh', s.start - 4, 0.175);
-  if (s.enter === 'mask') add('rise', s.start - 8, 0.3);
   if (s.type === 'reframe') { s.cues.slice(1, (s.props.shapes ?? []).length).forEach((c) => add('whoosh', s.start + c - 3, 0.15)); if (s.cues.length > (s.props.shapes ?? []).length) add('rise', s.start + s.cues[(s.props.shapes ?? []).length] - 6, 0.4); }
   if (s.type === 'features') s.cues.slice(1).forEach((c) => add('tick', s.start + c, 0.45));
   if (s.type === 'steps') s.cues.slice(s.props.title ? 1 : 0).forEach((c) => add('tick', s.start + c, 0.45));
