@@ -11,7 +11,7 @@ version with the date and bumps `plugin.json` to match.
 
 ### Added
 
-- `terminal` look: JetBrains Mono in place of the brand's fonts, scanlines, and words that type on behind a block
+- `terminal` look: JetBrains Mono in place of the brand's fonts (set at 72%, since a mono face runs wider), scanlines, and words that type on behind a block
   cursor with a soft phosphor glow (in `statement`, `kinetic` and every caption), with hard cuts. For CLIs and dev
   tools ([#43](https://github.com/mtblck/reelwright/pull/43)).
 - Looks: `"look"` in `story.json` re-skins the whole video without changing the story. `clean` is the default and
@@ -29,6 +29,8 @@ version with the date and bumps `plugin.json` to match.
 
 ### Changed
 
+- `kinetic` lines are sized to fit on one line, and a `stack` is laid out from its first frame, so earlier lines
+  no longer jump up as each new one arrives ([#43](https://github.com/mtblck/reelwright/pull/43)).
 - Transitions have two sides: the scene going out can move too, not only the one coming in. Each way in is one
   entry in `template/src/transitions.tsx` ([#40](https://github.com/mtblck/reelwright/pull/40)).
 - The README has a new look: the logo in light and dark, Reelwright's own promo reel as the hero, the three cuts,

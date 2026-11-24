@@ -1,7 +1,7 @@
 import React from 'react';
-import {AbsoluteFill, Img, OffthreadVideo, interpolate, useCurrentFrame} from 'remotion';
+import {AbsoluteFill, Img, OffthreadVideo, interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
 import type {Scene} from './types';
-import {Emph, asset, font, mix, rise, sceneColors, useBrand, useFade, useLayout, usePop} from './ui';
+import {Emph, asset, font, mix, rise, sceneColors, ts, useBrand, useFade, useLayout, usePop} from './ui';
 import {useLook} from './looks';
 
 type C = ReturnType<typeof sceneColors>;
@@ -56,11 +56,11 @@ const Words: React.FC<{text: string; at: number; size: number; color: string; ac
   const frame = useCurrentFrame();
   const look = useLook();
   if (look.text === 'type')
-    return <div style={{...font(b.display), fontSize: size, lineHeight: 1.12, letterSpacing: -0.01 * size, textAlign: align, textWrap: 'balance' as any}}><Typed text={text} at={at} color={color} accent={accent} /></div>;
+    return <div style={{...font(b.display), fontSize: ts(size), lineHeight: 1.12, letterSpacing: -0.01 * ts(size), textAlign: align, textWrap: 'balance' as any}}><Typed text={text} at={at} color={color} accent={accent} /></div>;
   const words = text.split(' ');
   let star = false;
   return (
-    <div style={{...font(b.display), fontSize: size, lineHeight: 1.08, letterSpacing: -0.02 * size, color, textAlign: align, textWrap: 'balance' as any}}>
+    <div style={{...font(b.display), fontSize: ts(size), lineHeight: 1.08, letterSpacing: -0.02 * ts(size), color, textAlign: align, textWrap: 'balance' as any}}>
       {words.map((w, i) => {
         const open = w.startsWith('*');
         const close = w.replace(/[.,!?:;]+$/, '').endsWith('*');
@@ -89,11 +89,11 @@ export const Title: React.FC<P> = ({scene, c}) => {
   return (
     <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', gap: 40 * u, padding: 90 * u}}>
       <Mark src={c.mark} size={(vertical ? 300 : 240) * u} at={2} />
-      <div style={{...font(b.display), ...rise(name, u), fontSize: 128 * k * u, letterSpacing: -2.5 * u, color: c.ink, lineHeight: 1}}>
+      <div style={{...font(b.display), ...rise(name, u), fontSize: ts(128 * k * u), letterSpacing: -2.5 * u, color: c.ink, lineHeight: 1}}>
         <Emph text={scene.props.name ?? b.name} color={b.accent} />
       </div>
       {(scene.props.tagline ?? b.tagline) && (
-        <div style={{...font(b.text), ...rise(tag, u, 24), fontSize: 46 * k * u, color: c.quiet, textAlign: 'center', maxWidth: 760 * u, lineHeight: 1.25, textWrap: 'balance' as any}}>
+        <div style={{...font(b.text), ...rise(tag, u, 24), fontSize: ts(46 * k * u), color: c.quiet, textAlign: 'center', maxWidth: 760 * u, lineHeight: 1.25, textWrap: 'balance' as any}}>
           <Emph text={scene.props.tagline ?? b.tagline!} color={b.accent} />
         </div>
       )}
@@ -108,7 +108,7 @@ export const Statement: React.FC<P> = ({scene, c}) => {
   const k = useFade(cue(scene));
   return (
     <AbsoluteFill style={{justifyContent: 'center', padding: (vertical ? 90 : 110) * u, gap: 36 * u}}>
-      {scene.props.kicker && <div style={{...font(b.text), opacity: k, fontSize: 34 * u, letterSpacing: 4 * u, textTransform: 'uppercase', color: b.accent, fontWeight: 700}}>{scene.props.kicker}</div>}
+      {scene.props.kicker && <div style={{...font(b.text), opacity: k, fontSize: ts(34 * u), letterSpacing: 4 * u, textTransform: 'uppercase', color: b.accent, fontWeight: 700}}>{scene.props.kicker}</div>}
       <Words text={scene.props.text} at={cue(scene) + 2} size={(vertical ? 112 : 104) * u} color={c.ink} accent={b.accent} align="left" />
     </AbsoluteFill>
   );
@@ -141,7 +141,7 @@ export const Screen: React.FC<P> = ({scene, c}) => {
     <div style={{width: bw, height: bh, borderRadius: r, overflow: 'hidden', background: b.paper, border: `${2 * u}px solid ${mix(c.ink, c.bg, 0.85)}`, boxShadow: `0 ${30 * u}px ${80 * u}px #00000030`, display: 'flex', flexDirection: 'column'}}>
       <div style={{height: 56 * u, flex: 'none', display: 'flex', alignItems: 'center', gap: 12 * u, padding: `0 ${22 * u}px`, background: mix(b.ink, b.paper, 0.93)}}>
         {[0, 1, 2].map((i) => <div key={i} style={{width: 16 * u, height: 16 * u, borderRadius: 99, background: mix(b.ink, b.paper, 0.7)}} />)}
-        {scene.props.url && <div style={{...font(b.text), marginLeft: 20 * u, flex: 1, height: 34 * u, borderRadius: 99, background: b.paper, fontSize: 20 * u, color: mix(b.ink, b.paper, 0.45), display: 'flex', alignItems: 'center', paddingLeft: 20 * u}}>{scene.props.url}</div>}
+        {scene.props.url && <div style={{...font(b.text), marginLeft: 20 * u, flex: 1, height: 34 * u, borderRadius: 99, background: b.paper, fontSize: ts(20 * u), color: mix(b.ink, b.paper, 0.45), display: 'flex', alignItems: 'center', paddingLeft: 20 * u}}>{scene.props.url}</div>}
       </div>
       <div style={{flex: 1, overflow: 'hidden'}}>{media}</div>
     </div>
@@ -172,7 +172,7 @@ export const Features: React.FC<P> = ({scene, c}) => {
   const items: string[] = scene.props.items ?? [];
   return (
     <AbsoluteFill style={{justifyContent: 'center', padding: (vertical ? 90 : 110) * u, gap: 56 * k * u}}>
-      <div style={{...font(b.display), ...rise(t, u), fontSize: 92 * k * u, lineHeight: 1.05, letterSpacing: -1.6 * u, color: c.ink}}>
+      <div style={{...font(b.display), ...rise(t, u), fontSize: ts(92 * k * u), lineHeight: 1.05, letterSpacing: -1.6 * u, color: c.ink}}>
         <Emph text={scene.props.title} color={b.accent} />
       </div>
       <div style={{display: 'flex', flexDirection: 'column', gap: 30 * k * u}}>
@@ -190,7 +190,7 @@ const Item: React.FC<{text: string; at: number; c: C; k: number}> = ({text, at, 
       <div style={{width: 64 * k * u, height: 64 * k * u, flex: 'none', borderRadius: 99, background: b.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `scale(${p})`}}>
         <svg viewBox="0 0 24 24" width={34 * k * u} height={34 * k * u}><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke={b.dark} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
       </div>
-      <div style={{...font(b.text), fontSize: 54 * k * u, lineHeight: 1.15, color: c.ink, fontWeight: 600}}><Emph text={text} color={b.accent} /></div>
+      <div style={{...font(b.text), fontSize: ts(54 * k * u), lineHeight: 1.15, color: c.ink, fontWeight: 600}}><Emph text={text} color={b.accent} /></div>
     </div>
   );
 };
@@ -210,8 +210,8 @@ export const Stat: React.FC<P> = ({scene, c}) => {
   const l = usePop(cue(scene, 1));
   return (
     <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', gap: 24 * u, padding: 90 * u}}>
-      <div style={{...font(b.display), fontSize: 300 * k * u, lineHeight: 1, letterSpacing: -8 * u, color: b.accent, opacity: Math.min(1, t * 3)}}>{shown}</div>
-      <div style={{...font(b.text), ...rise(l, u, 24), fontSize: 52 * k * u, color: c.ink, textAlign: 'center', maxWidth: 860 * u, lineHeight: 1.2, fontWeight: 600}}><Emph text={scene.props.label} color={b.accent} /></div>
+      <div style={{...font(b.display), fontSize: ts(300 * k * u), lineHeight: 1, letterSpacing: -8 * u, color: b.accent, opacity: Math.min(1, t * 3)}}>{shown}</div>
+      <div style={{...font(b.text), ...rise(l, u, 24), fontSize: ts(52 * k * u), color: c.ink, textAlign: 'center', maxWidth: 860 * u, lineHeight: 1.2, fontWeight: 600}}><Emph text={scene.props.label} color={b.accent} /></div>
     </AbsoluteFill>
   );
 };
@@ -225,7 +225,7 @@ export const Steps: React.FC<P> = ({scene, c}) => {
   const off = scene.props.title ? 1 : 0;
   return (
     <AbsoluteFill style={{justifyContent: 'center', alignItems: 'center', padding: 100 * u, gap: 56 * u}}>
-      {scene.props.title && <div style={{...font(b.display), ...rise(t, u), fontSize: 80 * u, color: c.ink, letterSpacing: -1.5 * u, textAlign: 'center'}}><Emph text={scene.props.title} color={b.accent} /></div>}
+      {scene.props.title && <div style={{...font(b.display), ...rise(t, u), fontSize: ts(80 * u), color: c.ink, letterSpacing: -1.5 * u, textAlign: 'center'}}><Emph text={scene.props.title} color={b.accent} /></div>}
       <div style={{display: 'flex', flexDirection: landscape ? 'row' : 'column', gap: 30 * u, width: '100%'}}>
         {steps.map((s, i) => <Step key={i} n={i + 1} text={s} at={cue(scene, i + off)} c={c} />)}
       </div>
@@ -238,8 +238,8 @@ const Step: React.FC<{n: number; text: string; at: number; c: C}> = ({n, text, a
   const p = usePop(at, 13);
   return (
     <div style={{flex: 1, ...rise(p, u, 50), background: c.card, borderRadius: (b.radius ?? 20) * u, padding: `${34 * u}px ${36 * u}px`, display: 'flex', alignItems: 'center', gap: 28 * u}}>
-      <div style={{...font(b.display), fontSize: 72 * u, color: b.accent, lineHeight: 1}}>{n}</div>
-      <div style={{...font(b.text), fontSize: 44 * u, color: c.ink, fontWeight: 600, lineHeight: 1.15}}><Emph text={text} color={b.accent} /></div>
+      <div style={{...font(b.display), fontSize: ts(72 * u), color: b.accent, lineHeight: 1}}>{n}</div>
+      <div style={{...font(b.text), fontSize: ts(44 * u), color: c.ink, fontWeight: 600, lineHeight: 1.15}}><Emph text={text} color={b.accent} /></div>
     </div>
   );
 };
@@ -260,9 +260,9 @@ export const End: React.FC<P> = ({scene, c}) => {
   return (
     <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', gap: 44 * u, padding: 90 * u}}>
       <Mark src={c.mark} size={200 * k * u} at={cue(scene, 0)} />
-      <div style={{...font(b.display), ...rise(n, u), fontSize: 104 * k * u, color: c.ink, letterSpacing: -2 * u, lineHeight: 1}}>{b.name}</div>
-      <div style={{...font(b.text), transform: `scale(${btn * down})`, background: fill, color: fg, fontSize: 46 * k * u, fontWeight: 700, padding: `${26 * k * u}px ${56 * k * u}px`, borderRadius: 999}}>{scene.props.button}</div>
-      {(scene.props.url ?? b.url) && <div style={{...font(b.text), opacity: url, fontSize: 40 * k * u, color: c.quiet}}>{scene.props.url ?? b.url}</div>}
+      <div style={{...font(b.display), ...rise(n, u), fontSize: ts(104 * k * u), color: c.ink, letterSpacing: -2 * u, lineHeight: 1}}>{b.name}</div>
+      <div style={{...font(b.text), transform: `scale(${btn * down})`, background: fill, color: fg, fontSize: ts(46 * k * u), fontWeight: 700, padding: `${26 * k * u}px ${56 * k * u}px`, borderRadius: 999}}>{scene.props.button}</div>
+      {(scene.props.url ?? b.url) && <div style={{...font(b.text), opacity: url, fontSize: ts(40 * k * u), color: c.quiet}}>{scene.props.url ?? b.url}</div>}
     </AbsoluteFill>
   );
 };
@@ -285,19 +285,28 @@ export const Kinetic: React.FC<P> = ({scene, c}) => {
     accent: {bg: b.accent, ink: b.dark, hot: b.paper},
   };
   const col = pal[scene.props.colors?.[scene.props.stack ? 0 : n] ?? scene.bg] ?? pal.dark;
-  const size = (vertical ? 210 : 190) * u * (look.text === 'type' ? 0.8 : 1); // a mono face runs wider
+  // as big as it goes, but small enough that the longest line fits on one line (0.62 em a character
+  // covers a mono face; proportional faces run narrower), so a beat never wraps mid-phrase
+  const {width} = useVideoConfig();
+  const longest = Math.max(1, ...words.map((w) => w.replace(/\*/g, '').length));
+  const size = Math.min((vertical ? 210 : 190) * u, (width - 160 * u) / (longest * 0.62 * (b.typeScale ?? 1)));
   const slam = (i: number) => {
     const p = usePop(cue(scene, i), 11);
     return {transform: `scale(${1.35 - 0.35 * p})`, opacity: Math.min(1, p * 2.2), filter: `blur(${Math.max(0, (1 - p) * 10 * u)}px)`};
   };
-  const style = (i: number) => ({...font(b.display), fontSize: size, lineHeight: 0.98, letterSpacing: -0.035 * size, color: col.ink, textAlign: 'center' as const, textWrap: 'balance' as any});
+  const style = (i: number) => ({...font(b.display), fontSize: ts(size), lineHeight: 0.98, letterSpacing: -0.035 * ts(size), color: col.ink, textAlign: 'center' as const, textWrap: 'balance' as any});
   const pops = words.map((_, i) => slam(i));
   const flash = (n === 0 && !scene.props.flashFirst) || look.text === 'type' ? 0 : interpolate(frame - cue(scene, n), [0, 5], [0.35, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
   return (
     <AbsoluteFill style={{background: col.bg, alignItems: 'center', justifyContent: 'center', padding: 80 * u}}>
       {scene.props.stack ? (
         <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 * u}}>
-          {words.map((w, i) => (frame >= cue(scene, i) ? <div key={i} style={{...style(i), ...(look.text === 'type' ? {} : pops[i]), opacity: (look.text === 'type' ? 1 : (pops[i].opacity as number)) * (i < n ? 0.38 : 1)}}>{look.text === 'type' ? <Typed text={w} at={cue(scene, i)} color={col.ink} accent={col.hot} /> : <Emph text={w} color={col.hot} />}</div> : null))}
+          {/* every line is laid out from the first frame and only shown at its cue, so the stack never re-centres as it grows */}
+          {words.map((w, i) => {
+            const on = frame >= cue(scene, i);
+            const typed = look.text === 'type';
+            return <div key={i} style={{...style(i), ...(typed || !on ? {} : pops[i]), opacity: !on ? 0 : (typed ? 1 : (pops[i].opacity as number)) * (i < n ? 0.38 : 1)}}>{typed ? <Typed text={w} at={cue(scene, i)} color={col.ink} accent={col.hot} /> : <Emph text={w} color={col.hot} />}</div>;
+          })}
         </div>
       ) : (
         look.text === 'type'
@@ -364,9 +373,9 @@ export const Reframe: React.FC<P> = ({scene, c}) => {
         </AbsoluteFill>
       )}
       {label && (
-        <div style={{position: 'absolute', bottom: (vertical ? 170 : 70) * u, left: 0, right: 0, textAlign: 'center', ...font(b.display), fontSize: (vertical ? 96 : 76) * u, letterSpacing: -1.5 * u, color: c.ink, opacity: Math.min(1, lp * 1.5) * mediaOp, transform: `translateY(${(1 - lp) * 30 * u}px)`}}>
+        <div style={{position: 'absolute', bottom: (vertical ? 170 : 70) * u, left: 0, right: 0, textAlign: 'center', ...font(b.display), fontSize: ts((vertical ? 96 : 76) * u), letterSpacing: -1.5 * u, color: c.ink, opacity: Math.min(1, lp * 1.5) * mediaOp, transform: `translateY(${(1 - lp) * 30 * u}px)`}}>
           <Emph text={label} color={b.accent} />
-          <span style={{...font(b.text), fontSize: (vertical ? 44 : 36) * u, color: b.accent, marginLeft: 22 * u, fontWeight: 700}}>{String(shapes[labelKey]?.aspect ?? '')}</span>
+          <span style={{...font(b.text), fontSize: ts((vertical ? 44 : 36) * u), color: b.accent, marginLeft: 22 * u, fontWeight: 700}}>{String(shapes[labelKey]?.aspect ?? '')}</span>
         </div>
       )}
       {scene.props.caption && (
