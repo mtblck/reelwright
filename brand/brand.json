@@ -1,0 +1,105 @@
+{
+  "name": "Reelwright",
+  "tagline": "Promo videos, cut from your repo.",
+  "about": "Reelwright makes short promo videos for a project from its repo and its brand: square, vertical and landscape cuts with a voiceover, music and sound effects. It is a Claude Code plugin in the mtblck marketplace.\n\nThe mark is the three cuts it makes, drawn as frames on one centre: tall, wide, and the square in Tungsten.",
+  "construction": "On a 256 grid, band 16: a 9:16 frame of 117 × 208, the same frame turned 16:9, and a square of 149 whose inner edge meets the tall frame exactly.",
+  "website": "github.com/mtblck/reelwright",
+  "colors": [
+    {
+      "name": "Emulsion",
+      "hex": "#0F4C4A",
+      "role": "primary",
+      "usage": "The wordmark, headings, the tall and wide frames and the brand field."
+    },
+    {
+      "name": "Tungsten",
+      "hex": "#D9661F",
+      "role": "accent",
+      "usage": "The square frame and one highlight per layout; never body text."
+    },
+    {
+      "name": "Leader",
+      "hex": "#F6F2EA",
+      "role": "paper",
+      "usage": "Page backgrounds, and the mark on Emulsion or Darkroom."
+    },
+    {
+      "name": "Darkroom",
+      "hex": "#0B1A19",
+      "role": "dark",
+      "usage": "Dark pages and the dark-mode ground."
+    },
+    {
+      "name": "Wash",
+      "hex": "#D3E5E1",
+      "role": "support",
+      "usage": "Panels, rules and quiet backgrounds."
+    }
+  ],
+  "type": {
+    "display": {
+      "family": "Familjen Grotesk",
+      "weight": 700
+    },
+    "text": {
+      "family": "Inter",
+      "weight": 400
+    }
+  },
+  "logos": {
+    "mark": {
+      "file": "mark.svg",
+      "dark": "mark-dark.svg",
+      "minWidth": 24
+    },
+    "horizontal": {
+      "file": "logo-horizontal.svg",
+      "dark": "logo-horizontal-dark.svg",
+      "minWidth": 120
+    },
+    "stacked": {
+      "file": "logo-stacked.svg",
+      "dark": "logo-stacked-dark.svg",
+      "minWidth": 72
+    }
+  },
+  "icon": {
+    "file": "mark-dark.svg",
+    "background": "#0F4C4A",
+    "favicon": "favicon.svg"
+  },
+  "social": {
+    "background": "#F6F2EA"
+  },
+  "templates": {
+    "background": "#0F4C4A"
+  },
+  "direction": {
+    "words": [
+      "crafted",
+      "cinematic",
+      "quick"
+    ],
+    "pairs": {
+      "tone": "between",
+      "era": "between",
+      "volume": "between",
+      "finish": "engineered"
+    },
+    "references": {
+      "like": [],
+      "avoid": [
+        "purple-gradient play-button video tools"
+      ]
+    },
+    "lives": "web",
+    "weirdness": 3
+  },
+  "legal": {
+    "owner": "mtblck",
+    "contact": "github.com/mtblck/reelwright"
+  },
+  "clearSpace": 0.25,
+  "exports": "all",
+  "out": "dist"
+}
