@@ -36,7 +36,7 @@ export const Video: React.FC<Props> = (p) => {
           return (
             <Sequence key={i} from={s.start} durationInFrames={s.dur + (i < p.scenes.length - 1 ? OVERLAP : 0)} name={`${i + 1} ${s.type}`}>
               <Transitioned scene={s} next={p.scenes[i + 1]}>
-                <AbsoluteFill style={{background: c.bg}}>{Comp ? <Comp scene={s} c={c} /> : null}</AbsoluteFill>
+                <AbsoluteFill style={{background: c.bg, textTransform: look.upper ? 'uppercase' : undefined}}>{look.Back && <look.Back index={i} bg={c.bg} brand={p.brand} />}{Comp ? <Comp scene={s} c={c} /> : null}{look.Front && <look.Front index={i} bg={c.bg} brand={p.brand} />}</AbsoluteFill>
               </Transitioned>
             </Sequence>
           );
