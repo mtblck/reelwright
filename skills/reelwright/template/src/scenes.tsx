@@ -43,10 +43,10 @@ export const Typed: React.FC<{text: string; at: number; color: string; accent: s
   });
   return <>{out}</>;
 };
-// a block cursor that takes no room, so it never pushes the line along
+// a block cursor that takes no room, wide or tall, so it never pushes a line along or makes it taller
 const Cursor: React.FC<{color: string}> = ({color}) => (
-  <span style={{position: 'relative', display: 'inline-block', width: 0, height: '1em', verticalAlign: 'text-bottom'}}>
-    <span style={{position: 'absolute', left: '0.04em', top: '0.05em', width: '0.55em', height: '0.95em', background: color, boxShadow: `0 0 0.2em ${color}88`}} />
+  <span style={{position: 'relative', display: 'inline-block', width: 0, height: 0}}>
+    <span style={{position: 'absolute', left: '0.04em', bottom: '-0.2em', width: '0.55em', height: '0.95em', background: color, boxShadow: `0 0 0.2em ${color}88`}} />
   </span>
 );
 
@@ -208,6 +208,15 @@ export const Stat: React.FC<P> = ({scene, c}) => {
   const now = n * (1 - Math.pow(1 - t, 3));
   const shown = isFinite(n) && n > 0 ? raw.replace(/[0-9][0-9,.]*/, now.toLocaleString('en-US', {minimumFractionDigits: dec, maximumFractionDigits: dec})) : raw;
   const l = usePop(cue(scene, 1));
+  const look = useLook();
+  if (look.text === 'type')
+    // a terminal prints the number, it doesn't count up: typed, left-aligned, with the label as a comment
+    return (
+      <AbsoluteFill style={{justifyContent: 'center', padding: (vertical ? 90 : 110) * u, gap: 12 * u}}>
+        <div style={{...font(b.display), fontSize: ts(170 * k * u), lineHeight: 1.1, whiteSpace: 'nowrap'}}><span style={{color: c.quiet}}>{'> '}</span><Typed text={raw} at={cue(scene)} color={b.accent} accent={b.accent} /></div>
+        <div style={{...font(b.text), fontSize: ts(56 * k * u), lineHeight: 1.3}}><Typed text={`# ${String(scene.props.label).replace(/\*/g, '')}`} at={cue(scene, 1)} color={c.quiet} accent={c.quiet} /></div>
+      </AbsoluteFill>
+    );
   return (
     <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', gap: 24 * u, padding: 90 * u}}>
       <div style={{...font(b.display), fontSize: ts(300 * k * u), lineHeight: 1, letterSpacing: -8 * u, color: b.accent, opacity: Math.min(1, t * 3)}}>{shown}</div>
@@ -289,28 +298,30 @@ export const Kinetic: React.FC<P> = ({scene, c}) => {
   // covers a mono face; proportional faces run narrower), so a beat never wraps mid-phrase
   const {width} = useVideoConfig();
   const longest = Math.max(1, ...words.map((w) => w.replace(/\*/g, '').length));
-  const size = Math.min((vertical ? 210 : 190) * u, (width - 160 * u) / (longest * 0.62 * (b.typeScale ?? 1)));
+  const term = look.text === 'type'; // lines of a terminal: left-aligned behind a prompt, at a terminal's size
+  const size = Math.min((term ? (vertical ? 120 : 110) : vertical ? 210 : 190) * u, (width - 160 * u) / ((longest + (term ? 2 : 0)) * 0.62 * (b.typeScale ?? 1)));
   const slam = (i: number) => {
     const p = usePop(cue(scene, i), 11);
     return {transform: `scale(${1.35 - 0.35 * p})`, opacity: Math.min(1, p * 2.2), filter: `blur(${Math.max(0, (1 - p) * 10 * u)}px)`};
   };
-  const style = (i: number) => ({...font(b.display), fontSize: ts(size), lineHeight: 0.98, letterSpacing: -0.035 * ts(size), color: col.ink, textAlign: 'center' as const, textWrap: 'balance' as any});
+  const style = (i: number) => ({...font(b.display), fontSize: ts(size), lineHeight: term ? 1.25 : 0.98, letterSpacing: (term ? 0 : -0.035) * ts(size), color: col.ink, textAlign: (term ? 'left' : 'center') as 'left' | 'center', textWrap: (term ? 'nowrap' : 'balance') as any});
+  const prompt = term ? <span style={{color: col.hot}}>{'> '}</span> : null;
   const pops = words.map((_, i) => slam(i));
   const flash = (n === 0 && !scene.props.flashFirst) || look.text === 'type' ? 0 : interpolate(frame - cue(scene, n), [0, 5], [0.35, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
   return (
-    <AbsoluteFill style={{background: col.bg, alignItems: 'center', justifyContent: 'center', padding: 80 * u}}>
+    <AbsoluteFill style={{background: col.bg, alignItems: term ? 'flex-start' : 'center', justifyContent: 'center', padding: 80 * u}}>
       {scene.props.stack ? (
-        <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 * u}}>
+        <div style={{display: 'flex', flexDirection: 'column', alignItems: term ? 'flex-start' : 'center', gap: (term ? 0 : 10) * u}}>
           {/* every line is laid out from the first frame and only shown at its cue, so the stack never re-centres as it grows */}
           {words.map((w, i) => {
             const on = frame >= cue(scene, i);
             const typed = look.text === 'type';
-            return <div key={i} style={{...style(i), ...(typed || !on ? {} : pops[i]), opacity: !on ? 0 : (typed ? 1 : (pops[i].opacity as number)) * (i < n ? 0.38 : 1)}}>{typed ? <Typed text={w} at={cue(scene, i)} color={col.ink} accent={col.hot} /> : <Emph text={w} color={col.hot} />}</div>;
+            return <div key={i} style={{...style(i), ...(typed || !on ? {} : pops[i]), opacity: !on ? 0 : (typed ? 1 : (pops[i].opacity as number)) * (i < n ? 0.38 : 1)}}>{typed ? <>{prompt}<Typed text={w} at={cue(scene, i)} color={col.ink} accent={col.hot} /></> : <Emph text={w} color={col.hot} />}</div>;
           })}
         </div>
       ) : (
         look.text === 'type'
-          ? <div key={n} style={style(n)}><Typed text={words[n] ?? ''} at={cue(scene, n)} color={col.ink} accent={col.hot} /></div>
+          ? <div key={n} style={style(n)}>{prompt}<Typed text={words[n] ?? ''} at={cue(scene, n)} color={col.ink} accent={col.hot} /></div>
           : <div key={n} style={{...style(n), ...pops[n]}}><Emph text={words[n] ?? ''} color={col.hot} /></div>
       )}
       <AbsoluteFill style={{background: col.hot, opacity: flash, pointerEvents: 'none'}} />

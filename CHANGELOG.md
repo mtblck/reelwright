@@ -12,7 +12,8 @@ version with the date and bumps `plugin.json` to match.
 ### Added
 
 - `terminal` look: JetBrains Mono in place of the brand's fonts (set at 72%, since a mono face runs wider), scanlines, and words that type on behind a block
-  cursor with a soft phosphor glow (in `statement`, `kinetic` and every caption), with hard cuts. For CLIs and dev
+  cursor with a soft phosphor glow (in `statement`, `kinetic` and every caption), with hard cuts. `kinetic` becomes
+  left-aligned lines behind a `>` prompt, and `stat` prints its number with the label as a `#` comment. For CLIs and dev
   tools ([#43](https://github.com/mtblck/reelwright/pull/43)).
 - Looks: `"look"` in `story.json` re-skins the whole video without changing the story. `clean` is the default and
   looks as before. `film` adds grain, a soft vignette, a little gate weave and flicker, and cuts with `splice`.
