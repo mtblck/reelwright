@@ -17,4 +17,6 @@ f "aevalsrc='(random(0)*2-1)*exp(-180*t)+0.6*sin(2*PI*180*t)*exp(-50*t)':d=0.07"
 f "aevalsrc='(sin(2*PI*1046.5*t)+0.6*sin(2*PI*1568*t)+0.15*sin(2*PI*2093*t))*exp(-4.5*t)':d=0.9" "volume=0.45" chime
 # rise: a short upward sweep under a counting number
 f "aevalsrc='sin(2*PI*(300*t+700*t*t))*min(1,t*6)*exp(-2.2*t)':d=0.7" "volume=0.5" rise
+# glitch: two stuttering bursts of crushed noise and buzz, 4 frames long, under a glitch cut
+f "aevalsrc='(gt(sin(2*PI*28*t),-0.3)*(random(0)*2-1)*0.7+0.35*sgn(sin(2*PI*196*t)))*exp(-9*t)':d=0.14" "acrusher=bits=5:mix=1,lowpass=f=6500,highpass=f=150,afade=t=out:st=0.1:d=0.04,volume=0.8" glitch
 ls -la "$OUT"

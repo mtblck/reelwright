@@ -11,6 +11,9 @@ version with the date and bumps `plugin.json` to match.
 
 ### Added
 
+- `whip` way in: a fast pan with a directional motion smear and a whoosh (`direction` as `push`). `glitch` way in:
+  a 4-frame hit that splits the colour channels and jolts bands of the picture sideways, with its own short sound;
+  meant for once per video ([#45](https://github.com/mtblck/reelwright/pull/45)).
 - `terminal` and `code` scenes, for projects with no app to film. `terminal` types a command, prints its output and
   lights one line; `scripts/term.mjs` records a real run for it. `code` shows lines from a file in the repo with line
   numbers and light syntax colours, then lights one range per phrase; `+ `/`- ` lines show as a diff. Both set text in

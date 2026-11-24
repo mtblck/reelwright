@@ -86,7 +86,74 @@ export const TRANSITIONS: Record<string, Transition> = {
       );
     },
   },
+  // whip: a fast pan, both scenes smeared along the move by a directional blur that peaks mid-move.
+  // opts.direction as push. The blur is an SVG filter, so the scene is drawn once per frame.
+  whip: {
+    len: 9,
+    ease: Easing.inOut(Easing.quad),
+    in: (p, c, ctx) => smear('in', p, ctx, wrap({transform: shift(ctx, 1 - p)}, c)),
+    out: (p, c, ctx) => smear('out', p, ctx, wrap({transform: shift(ctx, -p)}, c)),
+  },
+  // glitch: a 4-frame hit. Two frames of the old scene, then two of the new one, with the colour
+  // channels pulled apart and bands of the picture jolted sideways. Once per video at most.
+  glitch: {
+    len: 4,
+    ease: (t) => t,
+    in: (p, c, ctx) => (p < 0.5 ? null : p < 1 ? glitched('in', p, ctx, c) : c),
+    out: (p, c, ctx) => (p < 0.5 ? glitched('out', p, ctx, c) : c),
+  },
 };
+
+// a horizontal (or vertical) blur, strongest mid-move
+function smear(side: string, p: number, {width, height, opts}: Ctx, node: React.ReactNode) {
+  const vertical = opts.direction === 'up' || opts.direction === 'down';
+  const b = Math.sin(Math.PI * p) * (vertical ? height : width) * 0.045;
+  if (b < 0.5) return node;
+  const id = `whip-${side}`;
+  return (
+    <AbsoluteFill>
+      <svg width={0} height={0} style={{position: 'absolute'}}>
+        <filter id={id} x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur stdDeviation={vertical ? `0 ${b}` : `${b} 0`} />
+        </filter>
+      </svg>
+      <AbsoluteFill style={{filter: `url(#${id})`}}>{node}</AbsoluteFill>
+    </AbsoluteFill>
+  );
+}
+
+// red and blue pulled apart, and bands of the frame displaced sideways, different on each frame
+function glitched(side: string, p: number, {width, height}: Ctx, c: React.ReactNode) {
+  const short = Math.min(width, height);
+  const k = Math.round(p * 4); // the frame within the hit: 0, 1 (old) and 2, 3 (new)
+  const split = short * (k % 2 ? 0.012 : 0.02);
+  const id = `glitch-${side}-${k}`;
+  const ch = (r: number, g: number, b: number) => `${r} 0 0 0 0  0 ${g} 0 0 0  0 0 ${b} 0 0  0 0 0 1 0`;
+  return (
+    <AbsoluteFill>
+      <svg width={0} height={0} style={{position: 'absolute'}}>
+        <filter id={id} x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
+          {/* bands: noise stretched flat across the frame, stepped, drives a sideways displacement */}
+          <feTurbulence type="fractalNoise" baseFrequency={`0.00001 ${(6 + 5 * k) / height}`} numOctaves={1} seed={3 + k * 7} result="n" />
+          <feComponentTransfer in="n" result="bands">
+            <feFuncR type="discrete" tableValues="0.5 0.5 0.3 0.5 0.12 0.82 0.5 0.62 0.25 0.5 0.5" />
+            <feFuncG type="linear" slope={0} intercept={0.5} />
+          </feComponentTransfer>
+          <feDisplacementMap in="SourceGraphic" in2="bands" scale={short * 0.16} xChannelSelector="R" yChannelSelector="G" result="d" />
+          <feColorMatrix in="d" type="matrix" values={ch(1, 0, 0)} result="r" />
+          <feOffset in="r" dx={split} result="r2" />
+          <feColorMatrix in="d" type="matrix" values={ch(0, 1, 0)} result="g" />
+          <feColorMatrix in="d" type="matrix" values={ch(0, 0, 1)} result="b" />
+          <feOffset in="b" dx={-split} result="b2" />
+          <feBlend in="r2" in2="g" mode="screen" result="rg" />
+          <feBlend in="rg" in2="b2" mode="screen" />
+        </filter>
+      </svg>
+      {/* scaled up a little so the displaced bands never pull in the empty edge beyond the frame */}
+      <AbsoluteFill style={{filter: `url(#${id})`, transform: 'scale(1.08)'}}>{c}</AbsoluteFill>
+    </AbsoluteFill>
+  );
+}
 
 // The longest transition: how far a scene's Sequence must run past the next scene's start.
 export const OVERLAP = Math.max(...Object.values(TRANSITIONS).map((t) => t.len));
