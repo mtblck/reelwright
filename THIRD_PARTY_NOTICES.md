@@ -1,6 +1,6 @@
 # Third-party notices
 
-Everything in this repo is mtblck's own and covered by `LICENSE` (MIT), including the sound effects in `skills/reelwright/assets/sfx/` (synthesised by `scripts/make-sfx.sh`) and the music beds `scripts/music.mjs` writes. Both are also dedicated to the public domain (CC0), so videos made with them need no credit.
+Everything in this repo is mtblck's own. The code is covered by `LICENSE` (MIT), except `brand/` (the Reelwright name and logos: see `brand/LICENSE` and `brand/TRADEMARKS.md`). MIT also covers the sound effects in `skills/reelwright/assets/sfx/` (synthesised by `scripts/make-sfx.sh`) and the music beds `scripts/music.mjs` writes. Both are also dedicated to the public domain (CC0), so videos made with them need no credit.
 
 Downloaded at setup, not included here:
 

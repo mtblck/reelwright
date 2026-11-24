@@ -50,4 +50,4 @@ node skills/reelwright/scripts/render.mjs /tmp/inlay-video --formats square,vert
 
 ## License
 
-MIT. The sound effects and generated music are also CC0, so videos need no credit.
+The code is MIT; see [LICENSE](LICENSE). The sound effects and generated music are also CC0, so videos need no credit. The Reelwright name and logos, and everything in `brand/`, are not; see `brand/LICENSE` and `brand/TRADEMARKS.md`.
