@@ -225,12 +225,19 @@ function named(o, src) {
   const m = path.basename(src).match(/^(.+?)-(.+)\.png$/i);
   const file = m && path.join(path.dirname(src), `${m[1]}-boxes.json`);
   const boxes = file && fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8'))[m[2]] ?? {} : {};
-  const get = (n) => { if (!boxes[n]) throw new Error(`no box "${n}" for ${path.basename(src)}: record it with a box step before that shot (have: ${Object.keys(boxes).join(', ') || 'none'})`); return boxes[n]; };
+  const get = (n) => {
+    if (boxes[n]) return boxes[n];
+    if (m?.[2] === 'start') throw new Error(`no box "${n}": ${path.basename(src)} is taken before any step, so it has none. Add a {"shot": ..., "boxes": ...} step and use that picture`);
+    throw new Error(`no box "${n}" for ${path.basename(src)}: record it with a box step before that shot (have: ${Object.keys(boxes).join(', ') || 'none'})`);
+  };
   if (o.cursor) o.cursor = o.cursor.map((v) => (typeof v === 'string' ? (([x, y, w, h]) => [Math.round((x + w / 2) * 1e4) / 1e4, Math.round((y + h / 2) * 1e4) / 1e4])(get(v)) : v));
   if (o.focus) o.focus = o.focus.map((v) => (typeof v === 'string' ? get(v) : v));
 }
 const local = (o) => { if (o.image && !/^https?:/.test(o.image)) named(o, path.resolve(run, o.image)); for (const k of ['before', 'after', 'avatar']) if (o[k] && !/^https?:/.test(o[k])) o[k] = copy(path.resolve(run, o[k]), 'media'); for (const k of ['image', 'video']) if (o[k] && !/^https?:/.test(o[k])) { const src = path.resolve(run, o[k]); o.mediaSize ??= probe(src); o[k] = copy(src, 'media'); } };
-for (const s of scenes) { local(s.props); (s.props.shapes ?? []).forEach(local); (s.props.logos ?? []).forEach(local); }
+for (const s of scenes) {
+  local(s.props); (s.props.shapes ?? []).forEach(local); (s.props.logos ?? []).forEach(local);
+  for (const k of ['cursor', 'focus']) if ((s.props[k] ?? []).some((v) => typeof v === 'string')) throw new Error(`${s.type} scene: named ${k} targets need an image screenshot from capture.mjs (a clip has no boxes); give [x, y] numbers instead`);
+}
 
 // one voice track, every clip at its place
 let voice = null;

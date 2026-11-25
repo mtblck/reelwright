@@ -3,7 +3,7 @@
 //   steps.json: [{"click": "Try a sample"}, {"wait": 2000}, {"drag": "[role=slider]", "dx": -120}, {"shot": "traced"},
 //                {"scroll": 600}, {"type": ["input[name=q]", "hello"]}, {"press": "Enter"},
 //                {"box": "Export button", "selector": "button.export"}, {"box": "Download SVG"}, {"shot": "result"}]
-//   A box step notes where an element sits (by CSS selector, or by its text when there's no selector) for the
+//   A box step notes an element (by CSS selector, or by its text when there's no selector) to measure at the
 //   next shot; a shot can also list them: {"shot": "result", "boxes": {"Export button": "button.export"}}.
 //   They're saved to <out>/<device>-boxes.json as [x, y, w, h] fractions of the screenshot, so a story's
 //   cursor and zoom-pan focus can name them: "cursor": ["Export button"].
@@ -45,11 +45,16 @@ await page.screenshot({path: path.join(out, `${device}-start.png`)});
 const startAt = (Date.now() - t0) / 1000;
 const boxFile = path.join(out, `${device}-boxes.json`);
 const boxes = fs.existsSync(boxFile) ? JSON.parse(fs.readFileSync(boxFile, 'utf8')) : {};
+delete boxes.start; // the start screenshot is taken before any step, so it never has boxes
 let pending = {};
 // where an element sits in the viewport, as fractions of it (the screenshot is the viewport at 2x)
 async function boxOf(name, sel) {
-  const loc = sel ? page.locator(sel) : page.getByText(name, {exact: false});
-  const b = await loc.first().boundingBox({timeout: 5000}).catch(() => null);
+  // by selector; else by text: a button or link with that name, then an exact text, then any text containing it
+  let loc = null;
+  const tries = sel ? [page.locator(sel)] : [page.getByRole('button', {name, exact: true}), page.getByRole('link', {name, exact: true}), page.getByText(name, {exact: true}), page.getByText(name)];
+  for (const t of tries) { const v = t.filter({visible: true}); if (await v.count()) { loc = v; break; } }
+  if (loc && (await loc.count()) > 1) console.error(`! box "${name}": ${await loc.count()} elements match; using the first (give a selector to pick one)`);
+  const b = loc ? await loc.first().boundingBox({timeout: 5000}).catch(() => null) : null;
   if (!b) { console.error(`! box "${name}": nothing matches ${sel ? `selector ${sel}` : 'that text'} on screen`); return null; }
   const r = (v) => Math.round(v * 10000) / 10000;
   const x0 = Math.max(0, b.x), y0 = Math.max(0, b.y), x1 = Math.min(vp.width, b.x + b.width), y1 = Math.min(vp.height, b.y + b.height);
@@ -71,13 +76,18 @@ for (const s of steps) {
       await page.mouse.up();
     }
   }
-  if (s.box) { const b = await boxOf(s.box, s.selector); if (b) pending[s.box] = b; }
+  if (s.box) pending[s.box] = s.selector || '';
   if (s.shot) {
-    for (const [n, sel] of Object.entries(s.boxes ?? {})) { const b = await boxOf(n, sel); if (b) pending[n] = b; }
+    // measured as the shot is taken, so steps in between can't move them; a shot taken again replaces its boxes
+    const got = {};
+    for (const [n, sel] of Object.entries({...pending, ...(s.boxes ?? {})})) { const b = await boxOf(n, sel); if (b) got[n] = b; }
+    pending = {};
     await page.screenshot({path: path.join(out, `${device}-${s.shot}.png`)});
-    if (Object.keys(pending).length) { boxes[s.shot] = pending; pending = {}; fs.writeFileSync(boxFile, JSON.stringify(boxes, null, 1)); }
+    if (Object.keys(got).length) boxes[s.shot] = got; else delete boxes[s.shot];
+    fs.writeFileSync(boxFile, JSON.stringify(boxes, null, 1));
   }
 }
+if (Object.keys(pending).length) console.error(`! box steps after the last shot were not saved: ${Object.keys(pending).join(', ')} (put them before a {"shot": ...})`);
 await page.waitForTimeout(800);
 const video = clip ? page.video() : null;
 await ctx.close();
