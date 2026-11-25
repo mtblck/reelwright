@@ -13,6 +13,8 @@ export type Brand = {
   mono?: {family: string; weight: number}; // code and terminal text (build.mjs loads it when a story needs it)
   mark?: string; // square mark on paper (public path)
   markDark?: string; // square mark on dark
+  logo?: string; // wide logo for light title and end scenes, in place of mark and name (public path)
+  logoDark?: string; // wide logo for dark and brand title and end scenes
   radius?: number; // card corner radius at 1080 px
   typeScale?: number; // every font size times this (a look whose face runs wider sets it)
   fontCss?: string; // public path of the saved Google Fonts CSS (build.mjs)
