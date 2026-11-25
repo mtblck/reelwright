@@ -9,6 +9,8 @@ version with the date and bumps `plugin.json` to match.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-24
+
 ### Added
 
 - Short cuts: `build.mjs --length 6` or `15` makes a bumper or short ad from the same story, keeping the scenes
@@ -115,5 +117,6 @@ The first release ([#1](https://github.com/mtblck/reelwright/pull/1)).
 - In square cuts, a `screen` scene with a phone frame ran past the bottom of the 1080 px frame. The phone now sits
   beside its caption, as it does in landscape ([#3](https://github.com/mtblck/reelwright/pull/3)).
 
-[Unreleased]: https://github.com/mtblck/reelwright/compare/5bfc62c...HEAD
+[Unreleased]: https://github.com/mtblck/reelwright/compare/0d4ba92...HEAD
+[0.2.0]: https://github.com/mtblck/reelwright/compare/5bfc62c...0d4ba92
 [0.1.0]: https://github.com/mtblck/reelwright/commit/5bfc62c
