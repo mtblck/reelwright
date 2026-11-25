@@ -1,8 +1,9 @@
 import React from 'react';
 import {AbsoluteFill, Easing, Img, OffthreadVideo, interpolate, useCurrentFrame} from 'remotion';
 import type {Scene} from './types';
-import {Emph, asset, font, mix, rise, sceneColors, ts, useBrand, useLayout, usePop} from './ui';
-import {Words} from './scenes';
+import {Emph, asset, countUp, font, mix, rise, sceneColors, ts, useBrand, useLayout, usePop} from './ui';
+import {Typed, Words} from './scenes';
+import {useLook} from './looks';
 
 // Scenes that prove a claim: a before and after, a real quote, an old-way/new-way table, the logos of
 // what it works with, and a diagram of how it works. Quotes, names and numbers must be real (story.md).
@@ -212,4 +213,128 @@ const Arrow: React.FC<{at: number; across: boolean; len: number; c: C}> = ({at, 
   );
 };
 
-export const PROOF_SCENES = {'before-after': BeforeAfter, quote: Quote, compare: Compare, 'logo-wall': LogoWall, diagram: Diagram};
+// chart: numbers that grow, as bars or a line: a benchmark, growth over time, a before and after.
+// props: {data* ([{label, value}], 2 to 8; value a number or text with one in it: 1.3, "1.3 s", "12,000+"),
+// kind? ('bar' default, or 'line'), title?, highlight? (index in the accent; default the largest), source?}
+// reveals: 1 the title and the first group; the bars or points come in one group per phrase
+type Datum = {label: string; value: string | number};
+const num = (v: string | number) => {
+  const n = parseFloat(String(v).replace(/,/g, '').match(/[0-9]*\.?[0-9]+/)?.[0] ?? '');
+  return isFinite(n) ? n : 0;
+};
+export const Chart: React.FC<P> = ({scene, c}) => {
+  const b = useBrand();
+  const {u, width, height, vertical, landscape, tall} = useLayout();
+  const frame = useCurrentFrame();
+  const look = useLook();
+  const data: Datum[] = (scene.props.data ?? []).slice(0, 8);
+  const n = Math.max(1, data.length);
+  const vals = data.map((d) => num(d.value));
+  const max = Math.max(...vals, 0) || 1;
+  const hot: number = scene.props.highlight ?? vals.lastIndexOf(Math.max(...vals));
+  // one group per phrase, as even as they can be; inside a group each bar or point follows the last by 5 frames
+  const groups = Math.max(1, Math.min(scene.cues.length, n));
+  const at = (i: number) => {
+    const g = Math.floor((i * groups) / n);
+    return cue(scene, g) + (i - Math.ceil((g * n) / groups)) * 5;
+  };
+  const grow = (i: number, delay = 0) => interpolate(frame, [at(i) + delay, at(i) + delay + 22], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.out(Easing.cubic)});
+  const t = usePop(cue(scene));
+  const title: string | undefined = scene.props.title;
+  const muted = mix(c.ink, c.bg, 0.72);
+
+  if (look.text === 'type' && scene.props.kind !== 'line') {
+    // a terminal prints bars of block characters, each growing to its length, the value after it
+    const cols = vertical ? 12 : landscape ? 28 : 16;
+    const labels = data.map((d) => String(d.label).slice(0, 14));
+    const L = Math.max(...labels.map((l) => l.length));
+    return (
+      <AbsoluteFill style={{justifyContent: 'center', padding: (vertical ? 80 : 110) * u, gap: 18 * u}}>
+        {title && <div style={{...font(b.display), fontSize: ts(56 * u), lineHeight: 1.3, marginBottom: 20 * u}}><Typed text={`# ${title.replace(/\*/g, '')}`} at={cue(scene)} color={c.quiet} accent={c.quiet} /></div>}
+        {data.map((d, i) => {
+          const g = grow(i);
+          return (
+            <div key={i} style={{...font(b.display), fontSize: ts((vertical ? 50 : 60) * u), lineHeight: 1.25, whiteSpace: 'pre', opacity: g > 0 ? 1 : 0}}>
+              <span style={{color: c.quiet}}>{labels[i].padEnd(L)} </span>
+              <span style={{color: i === hot ? b.accent : c.ink}}>{'█'.repeat(Math.round((cols * vals[i] * g) / max))}</span>
+              <span style={{color: i === hot ? b.accent : c.ink}}> {countUp(String(d.value), g)}</span>
+            </div>
+          );
+        })}
+        {scene.props.source && <div style={{...font(b.text), fontSize: ts(40 * u), lineHeight: 1.3, marginTop: 20 * u, color: c.quiet, opacity: Math.min(1, t * 1.4)}}>{`# ${scene.props.source}`}</div>}
+      </AbsoluteFill>
+    );
+  }
+
+  const pad = (vertical ? 70 : landscape ? 150 : 90) * u;
+  const W = Math.min(width - 2 * pad, (landscape ? 1500 : 940) * u);
+  const H = (vertical ? 760 : landscape ? 480 : 400 + tall * 0.8) * u;
+  // burned-in captions sit low in the frame (a quarter up in the vertical cut): keep the chart above them
+  const under = Math.max(pad, height * (vertical ? 0.3 : 0.15));
+  const slot = W / n;
+  const vs = (n <= 4 ? 46 : n <= 6 ? 40 : 34) * (vertical ? 1.1 : 1) * u; // value size
+  const top = H - vs * 1.7; // the tallest bar or point, with room for its value over it
+  const x = (i: number) => slot * (i + 0.5);
+  const y = (i: number) => H - (vals[i] / max) * top;
+  const value = (i: number, bottom: number, g: number) => (
+    <div style={{...font(b.display), position: 'absolute', left: x(i), bottom, transform: 'translateX(-50%)', whiteSpace: 'nowrap', fontSize: ts(vs), lineHeight: 1, color: c.ink, opacity: Math.min(1, g * 3)}}>{countUp(String(data[i].value), g)}</div>
+  );
+
+  let plot: React.ReactNode;
+  if (scene.props.kind === 'line') {
+    const seg = data.map((_, i) => (i ? Math.hypot(x(i) - x(i - 1), y(i) - y(i - 1)) : 0));
+    const total = seg.reduce((a, s) => a + s, 0) || 1;
+    const drawn = seg.reduce((a, s, i) => a + s * (i ? grow(i) : 0), 0);
+    // the shaded area follows the head of the line
+    let head = x(0);
+    for (let i = 1; i < n; i++) if (grow(i) > 0) head = x(i - 1) + (x(i) - x(i - 1)) * grow(i);
+    const d = data.map((_, i) => `${i ? 'L' : 'M'}${x(i)} ${y(i)}`).join(' ');
+    plot = (
+      <>
+        <svg width={W} height={H} style={{position: 'absolute', inset: 0, overflow: 'visible'}}>
+          <defs><clipPath id={`area-${scene.start}`}><rect x={0} y={0} width={head} height={H} /></clipPath></defs>
+          <path d={`${d} L${x(n - 1)} ${H} L${x(0)} ${H} Z`} fill={c.ink} opacity={0.07} clipPath={`url(#area-${scene.start})`} />
+          <path d={d} fill="none" stroke={c.ink} strokeWidth={6 * u} strokeLinecap="round" strokeLinejoin="round" strokeDasharray={total} strokeDashoffset={total - drawn} />
+          {data.map((_, i) => {
+            const p = grow(i, i ? 10 : 0);
+            return <circle key={i} cx={x(i)} cy={y(i)} r={(i === hot ? 17 : 11) * u * p} fill={i === hot ? b.accent : c.bg} stroke={i === hot ? b.accent : c.ink} strokeWidth={5 * u} opacity={p > 0 ? 1 : 0} />;
+          })}
+        </svg>
+        {data.map((_, i) => <React.Fragment key={i}>{value(i, H - y(i) + 30 * u, grow(i, i ? 10 : 0))}</React.Fragment>)}
+      </>
+    );
+  } else {
+    const bw = Math.min(slot * 0.62, 220 * u);
+    const r = Math.min(bw / 4, (b.radius ?? 20) * u * 0.6);
+    plot = data.map((_, i) => {
+      const g = grow(i);
+      const h = (vals[i] / max) * top * g;
+      return (
+        <React.Fragment key={i}>
+          <div style={{position: 'absolute', bottom: 0, left: x(i) - bw / 2, width: bw, height: h, borderRadius: `${r}px ${r}px 0 0`, background: i === hot ? b.accent : muted}} />
+          {value(i, h + 14 * u, g)}
+        </React.Fragment>
+      );
+    });
+  }
+
+  return (
+    <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', padding: `${pad}px ${pad}px ${under}px`, gap: 50 * u}}>
+      {title && <div style={{...font(b.display), ...rise(t, u), fontSize: ts(76 * u), lineHeight: 1.05, letterSpacing: -1.4 * u, color: c.ink, textAlign: 'center', maxWidth: 1400 * u}}><Emph text={title} color={b.accent} /></div>}
+      <div style={{width: W}}>
+        <div style={{position: 'relative', width: W, height: H}}>
+          {plot}
+          <div style={{position: 'absolute', left: 0, right: 0, bottom: -1.5 * u, height: 3 * u, background: muted, opacity: Math.min(1, t * 1.4)}} />
+        </div>
+        <div style={{display: 'flex', marginTop: 20 * u}}>
+          {data.map((d, i) => (
+            <div key={i} style={{...font(b.text), width: slot, padding: `0 ${6 * u}px`, boxSizing: 'border-box', textAlign: 'center', fontSize: ts((n <= 4 ? 34 : 28) * (vertical ? 1.1 : 1) * u), lineHeight: 1.2, fontWeight: i === hot ? 700 : 500, color: i === hot ? c.ink : c.quiet, opacity: Math.min(1, grow(i) * 3)}}>{d.label}</div>
+          ))}
+        </div>
+      </div>
+      {scene.props.source && <div style={{...font(b.text), fontSize: ts(28 * u), color: c.quiet, opacity: Math.min(1, t * 1.4)}}>{scene.props.source}</div>}
+    </AbsoluteFill>
+  );
+};
+
+export const PROOF_SCENES = {'before-after': BeforeAfter, quote: Quote, compare: Compare, 'logo-wall': LogoWall, diagram: Diagram, chart: Chart};
