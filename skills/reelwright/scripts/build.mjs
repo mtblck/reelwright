@@ -424,7 +424,9 @@ for (const ln of lines4captions) {
 // each line stays up until the next one, or a beat after its last word
 captionLines.forEach((c, k) => { const next = captionLines[k + 1]; c.to = Math.min(c.to + 8, next ? next.from : Infinity); });
 // on by default for the vertical, portrait and square cuts (mostly watched muted in feeds), off for landscape
-const captions = story.captions === false ? null : {formats: story.captions === true ? ['vertical', 'portrait', 'square', 'landscape'] : Array.isArray(story.captions) ? story.captions : ['vertical', 'portrait', 'square'], lines: captionLines};
+// never on an App Store preview: Apple shows its own, and the preview is the app itself
+if (Array.isArray(story.captions) && story.captions.some((c) => /^appstore/.test(c))) console.error('! captions: App Store previews never get burned-in captions; left out of appstore cuts');
+const captions = story.captions === false ? null : {formats: story.captions === true ? ['vertical', 'portrait', 'square', 'landscape'] : Array.isArray(story.captions) ? story.captions.filter((c) => !/^appstore/.test(c)) : ['vertical', 'portrait', 'square'], lines: captionLines};
 
 // subtitle cues for .srt/.vtt: each phrase as written (no pronounce respellings, no stars), split at
 // punctuation into cues of at most two 42-character lines
@@ -460,5 +462,6 @@ if (chapters.length > 1 && total - chapters.at(-1).at < 10 * FPS) chapters.pop()
 const props = {brand, look, scenes, voice, music, speech, sfx, captions, subtitles, chapters, durationInFrames: total};
 fs.writeFileSync(path.join(run, `props${suffix}.json`), JSON.stringify(props, null, 1));
 if (length && total / FPS > length * 1.25) console.warn(`note: the ${length} s cut runs ${(total / FPS).toFixed(1)} s; mark fewer scenes with keep, or shorter ones`);
+if (length === 15 && total / FPS < 15) console.warn(`note: the 15 s cut runs ${(total / FPS).toFixed(1)} s, under the 15 s an App Store preview needs; mark more scenes "keep": 15`);
 console.log(`${suffix ? `${length} s cut: ` : ''}${total} frames = ${(total / FPS).toFixed(1)} s, ${look} look${music ? `, music ${m.file ? path.basename(music.src) : `${m.mood} bed`}` : ', no music'}${beat ? `, cuts on the beat at ${bpm} bpm` : ''}`);
 for (const [i, s] of scenes.entries()) console.log(`  f${String(s.start).padStart(4)}-${String(s.start + s.dur).padStart(4)}  ${s.type.padEnd(9)} ${phrases[i].join(' | ')}`);
