@@ -160,6 +160,7 @@ const scenes = [];
 const placed = []; // [file, startSeconds]
 const speech = [];
 const lines4captions = []; // phrases to caption: written text, start in seconds, its clip
+const lines4subs = []; // every phrase, for the subtitle files (a scene's captions: false only hides the burned-in ones)
 story.scenes.forEach((s, i) => {
   const cues = [];
   let at = LEAD;
@@ -169,6 +170,7 @@ story.scenes.forEach((s, i) => {
     placed.push([c.file, t + at]);
     speech.push([f(t + at), f(t + at + c.seconds)]);
     if (s.captions !== false) lines4captions.push({text: phrases[i][j], at: t + at, clip: c});
+    lines4subs.push({text: phrases[i][j], at: t + at, clip: c});
     at += c.seconds + (s.accelerate ? PAUSE * Math.pow(0.5, j) : PAUSE); // accelerate: each gap half the last
   });
   if (!cues.length) cues.push(f(0.2));
@@ -316,7 +318,38 @@ captionLines.forEach((c, k) => { const next = captionLines[k + 1]; c.to = Math.m
 // on by default for the vertical and square cuts (mostly watched muted in feeds), off for landscape
 const captions = story.captions === false ? null : {formats: story.captions === true ? ['vertical', 'square', 'landscape'] : Array.isArray(story.captions) ? story.captions : ['vertical', 'square'], lines: captionLines};
 
-const props = {brand, look, scenes, voice, music, speech, sfx, captions, durationInFrames: total};
+// subtitle cues for .srt/.vtt: each phrase as written (no pronounce respellings, no stars), split at
+// punctuation into cues of at most two 42-character lines
+const subtitles = [];
+for (const ln of lines4subs) {
+  const ws = wordTimes(ln.text, ln.at, ln.clip);
+  let cue = [];
+  const flush = () => { if (cue.length) subtitles.push({from: cue[0].from, to: cue.at(-1).to, text: cue.map((w) => w.t).join(' ')}); cue = []; };
+  ws.forEach((w) => {
+    if (cue.length && [...cue, w].map((x) => x.t).join(' ').length > 84) flush();
+    cue.push(w);
+    if (/[.!?]$/.test(w.t) && cue.map((x) => x.t).join(' ').length > 30) flush();
+  });
+  flush();
+}
+// each cue stays up a little past its last word, but never into the next one
+subtitles.forEach((c, k) => { const next = subtitles[k + 1]; c.to = Math.max(c.from + 1, Math.min(c.to + 12, next ? next.from - 1 : total)); });
+// chapters, one per scene (a scene's `chapter` names it), joined until each runs 10 s, as YouTube asks
+const sceneName = (s, i) => {
+  if (story.scenes[i].chapter) return story.scenes[i].chapter;
+  const first = ((s.type === 'title' && (s.props.name ?? brand.name)) || phrases[i][0] || s.type).replace(/\*/g, '').replace(/[.!?,;:]+$/, '').trim();
+  const k = first.lastIndexOf(' ', 40);
+  return first.length > 40 ? first.slice(0, k > 10 ? k : 40) + '…' : first;
+};
+const chapters = [];
+scenes.forEach((s, i) => {
+  const prev = chapters.at(-1);
+  if (prev && (s.start - prev.at < 10 * FPS)) return; // the previous chapter is still too short: this scene joins it
+  chapters.push({at: chapters.length ? s.start : 0, title: sceneName(s, i)});
+});
+if (chapters.length > 1 && total - chapters.at(-1).at < 10 * FPS) chapters.pop();
+
+const props = {brand, look, scenes, voice, music, speech, sfx, captions, subtitles, chapters, durationInFrames: total};
 fs.writeFileSync(path.join(run, `props${suffix}.json`), JSON.stringify(props, null, 1));
 if (length && total / FPS > length * 1.25) console.warn(`note: the ${length} s cut runs ${(total / FPS).toFixed(1)} s; mark fewer scenes with keep, or shorter ones`);
 console.log(`${suffix ? `${length} s cut: ` : ''}${total} frames = ${(total / FPS).toFixed(1)} s, ${look} look${music ? `, music ${m.file ? path.basename(music.src) : `${m.mood} bed`}` : ', no music'}${beat ? `, cuts on the beat at ${bpm} bpm` : ''}`);

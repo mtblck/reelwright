@@ -27,7 +27,7 @@ One file describes the whole video. `build.mjs` reads it from the run folder; pa
 | `captions` | Burned-in captions: the line being spoken, a few words at a time, the word being said lit in the accent, inside the platform safe zones. On by default in the vertical and square cuts (feeds play muted), off in landscape. `true` for all three, `false` for none, or a list such as `["vertical"]`. A scene's own `"captions": false` leaves it uncaptioned (say, an end card whose words are already on screen). Word timings are estimated from each phrase's pauses and syllables. |
 | `sfx` | `false` turns the sound effects off. Otherwise they're placed for you, all quiet under the voice: a whoosh on moving cuts, ticks on list items, a sub drop under the `title`, a riser into a `reframe`, a click and chime on the end button, a click for each cursor target, a hit on a stinger. |
 | `beatSync` | Cuts land on the music's beats and the video ends on a bar line (default on). Each cut moves to the nearest beat, or the next one if the nearest would clip the scene's last word; phrases keep their place against their reveals. `false` keeps the voice-only timing. With your own `music.file`, set `music.bpm` to turn it on (the track's first beat must be at 0 s). |
-| `scenes` | In order. Each has `type`, `say` and that type's props, plus `bg` (`paper`, `dark`, `brand`), `enter` (`cut`, `slide`, `fade`, `zoom`, `splice`: a wipe behind a bar of the accent colour, `push`: the new scene shoves the old one off, `mask`: the new scene opens through a growing shape; `whip`: a fast pan with a motion smear and a whoosh, `direction` as push; `match`: a match cut, the old scene's main shape (a device, window, frame, viewport or the mark on `title` and `end`) moves and reshapes onto the new scene's while the rest dips through the colours, e.g. `title` → `screen` → `zoom-pan`; scenes with no main shape get a plain dip; `glitch`: a 4-frame hit with the colours split and bands jolted sideways, best once per video and on a cut into a scene with words already on screen (`kinetic`, `statement`), good with the `terminal` look; default after the first: the look's (`slide` for `clean`, `splice` for `film`, `cut` for `terminal`); with options as `{"type": "push", "direction": "up"}`, push's direction `left` (default), `right`, `up` or `down`; mask's `shape` `mark` (the brand mark, default), `frame` (with `aspect` `9:16`, `1:1` or `16:9`) or `iris`) `hold` (extra seconds) and `keep` (`6` or `15`: the shortest cut the scene belongs in; see Short cuts below). |
+| `scenes` | In order. Each has `type`, `say` and that type's props, plus `bg` (`paper`, `dark`, `brand`), `enter` (`cut`, `slide`, `fade`, `zoom`, `splice`: a wipe behind a bar of the accent colour, `push`: the new scene shoves the old one off, `mask`: the new scene opens through a growing shape; `whip`: a fast pan with a motion smear and a whoosh, `direction` as push; `match`: a match cut, the old scene's main shape (a device, window, frame, viewport or the mark on `title` and `end`) moves and reshapes onto the new scene's while the rest dips through the colours, e.g. `title` → `screen` → `zoom-pan`; scenes with no main shape get a plain dip; `glitch`: a 4-frame hit with the colours split and bands jolted sideways, best once per video and on a cut into a scene with words already on screen (`kinetic`, `statement`), good with the `terminal` look; default after the first: the look's (`slide` for `clean`, `splice` for `film`, `cut` for `terminal`); with options as `{"type": "push", "direction": "up"}`, push's direction `left` (default), `right`, `up` or `down`; mask's `shape` `mark` (the brand mark, default), `frame` (with `aspect` `9:16`, `1:1` or `16:9`) or `iris`) `hold` (extra seconds) `keep` (`6` or `15`: the shortest cut the scene belongs in; see Short cuts below) and `chapter` (its name in the YouTube chapters; default its first line, or the name on `title`). |
 
 `*stars*` around words in on-screen text set them in the accent colour.
 
@@ -60,6 +60,24 @@ Screen captures: a phone clip from `capture.mjs --device phone --clip` fits the 
 **Proof is real.** A `quote` is someone's actual words, copied exactly, with where they said it (an issue, a review, a post); a `stat` or `compare` row is a number or fact you can point to in the repo, its README or `gh api` (stars, downloads, benchmark output). If there's nothing real to quote, leave the scene out; never write a testimonial.
 
 **Cursor** (`screen` and `zoom-pan`): `cursor` is one target per phrase, `[x, y]` as fractions of the picture, or `null` for none. The cursor glides in from the lower right to each target as its phrase starts and clicks it (with a ripple and a click) two-thirds of a second later. It follows the picture as the camera moves. Find targets by opening the screenshot and measuring: a button at 1195, 598 in a 2000 x 1250 picture is `[0.6, 0.48]`.
+## Subtitles and chapters
+
+Every cut gets `<name>-<format>.srt` and `.vtt` beside its MP4 (short cuts too), timed to the voice, with each
+line as written: `pronounce` respellings and `*stars*` don't show. A scene's `"captions": false` hides only the
+burned-in captions; its lines are still in the files. Upload the `.srt` with the video so feeds and players can
+show it (and search can read it).
+
+With the landscape cut, `<name>-chapters.txt` lists chapter marks to paste into a YouTube description:
+
+```
+0:00 Inlay
+0:13 Free, private, open
+0:24 Try Inlay, free
+```
+
+Scenes join until each chapter runs 10 seconds, and YouTube only shows chapters when there are three or more,
+so a 20 to 40 second video rarely gets them: render.mjs writes the file only when it does, and says so when it doesn't. Name a chapter with the scene's `chapter`.
+
 ## Short cuts
 
 `node build.mjs <run> --length 6` (or `15`) builds a bumper or a short ad from the same story, beside the full one,
