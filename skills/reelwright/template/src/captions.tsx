@@ -31,7 +31,7 @@ export const Captions: React.FC<{captions: C}> = ({captions}) => {
             return (
               <span key={i} style={{color: now ? b.accent : b.paper, opacity: now || said ? 1 : 0.6}}>
                 {w.t.replace(/\*/g, '')}
-                {i < line.words.length - 1 ? ' ' : ''}
+                {i < line.words.length - 1 && !w.j ? ' ' : ''}
               </span>
             );
           })}

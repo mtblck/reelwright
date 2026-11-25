@@ -309,7 +309,17 @@ function subs(base) {
   if (!props.subtitles?.length) return;
   const stamp = (fr, sep) => { const ms = Math.round((fr / 30) * 1000); const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, sec = Math.floor(ms / 1000) % 60; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}${sep}${String(ms % 1000).padStart(3, '0')}`; };
   // two lines at most: the break nearest the middle that keeps both within 42 characters, if there is one
+  const CJK = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/;
   const wrap = (t) => {
+    // Japanese and Chinese have no spaces: two lines of up to 21 characters, broken after punctuation if one is near the middle
+    if (CJK.test(t) && !t.includes(' ')) {
+      const ch = [...t];
+      if (ch.length <= 21) return t;
+      const mid = Math.ceil(ch.length / 2);
+      const p = ch.map((c, i) => (/[、。，！？；：]/.test(c) ? i + 1 : -1)).filter((i) => i > 0 && i < ch.length && Math.abs(i - mid) <= 5).sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid))[0];
+      const k = p ?? mid;
+      return `${ch.slice(0, k).join('')}\n${ch.slice(k).join('')}`;
+    }
     if (t.length <= 42) return t;
     const spaces = [...t].map((ch, i) => (ch === ' ' ? i : -1)).filter((i) => i > 0);
     const fits = spaces.filter((i) => i <= 42 && t.length - i - 1 <= 42);

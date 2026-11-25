@@ -17,6 +17,7 @@ export type Brand = {
   logoDark?: string; // wide logo for dark and brand title and end scenes
   radius?: number; // card corner radius at 1080 px
   typeScale?: number; // every font size times this (a look whose face runs wider sets it)
+  fallback?: string[]; // faces for scripts the brand's fonts lack (Noto Sans JP, SC, KR, Devanagari), after them in every stack
   fontCss?: string; // public path of the saved Google Fonts CSS (build.mjs)
 };
 
@@ -32,7 +33,7 @@ export type Scene = {
 };
 
 // burned-in captions: short lines of a few words, each word with the frames it's spoken over
-export type Captions = {formats: string[]; lines: {from: number; to: number; words: {t: string; from: number; to: number}[]}[]};
+export type Captions = {formats: string[]; lines: {from: number; to: number; words: {t: string; from: number; to: number; j?: boolean}[]}[]}; // j: no space after (CJK)
 
 export type Sfx = {src: string; at: number; volume?: number};
 

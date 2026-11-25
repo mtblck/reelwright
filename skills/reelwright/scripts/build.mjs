@@ -4,7 +4,8 @@
 // <run>/props-<n>s.json beside the full one; render.mjs --length <n> renders it.
 // Reads <run>/story.json. Voice clips are cached in ~/.cache/reelwright/voice, so re-running after a
 // visual-only edit is instant; changing a line re-voices only that line.
-import {execFileSync} from 'node:child_process';
+import {execFileSync, spawnSync} from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -101,8 +102,18 @@ if (LOOKS[look].scale) brand.typeScale = LOOKS[look].scale;
 // needs no network and no trust in whatever proxy sits in front of it ---
 // terminal and code scenes set their text in a mono face
 if (story.scenes.some((s) => s.type === 'terminal' || s.type === 'code')) brand.mono ??= mono ? brand.display : {family: 'JetBrains Mono', weight: 700};
-brand.fontCss = fonts([brand.display, brand.text, ...(brand.mono ? [brand.mono] : [])]);
-function fonts(list) {
+// Japanese, Chinese, Korean and Hindi text: the brand's fonts rarely have those letters, so a Noto face for
+// each script on screen goes after them, cut down to the characters the story uses
+const storyText = JSON.stringify([story.scenes, brand.name, brand.tagline, brand.url]); // everything that reaches the screen
+const SCRIPTS = [
+  [/[\u3040-\u30ff]/, 'Noto Sans JP'],
+  [/[\u3400-\u4dbf\u4e00-\u9fff]/, (story.voice?.lang ?? '') === 'ja' || /[\u3040-\u30ff]/.test(storyText) ? 'Noto Sans JP' : 'Noto Sans SC'],
+  [/[\uac00-\ud7af]/, 'Noto Sans KR'],
+  [/[\u0900-\u097f]/, 'Noto Sans Devanagari'],
+];
+brand.fallback = [...new Set(SCRIPTS.filter(([re]) => re.test(storyText)).map(([, fam]) => fam))];
+brand.fontCss = fonts([brand.display, brand.text, ...(brand.mono ? [brand.mono] : [])], brand.fallback);
+function fonts(list, extra = []) {
   const fams = [...new Map(list.map((f) => [f.family, f])).values()];
   const q = fams.map((f) => `family=${encodeURIComponent(f.family).replace(/%20/g, '+')}:wght@400;${f.weight === 400 ? 700 : f.weight}`).join('&');
   const cache = path.join(path.dirname(env.KOKORO_MODEL), '..', 'fonts');
@@ -117,8 +128,21 @@ function fonts(list) {
     console.error(`! could not fetch ${fams.map((f) => f.family).join(', ')} from Google Fonts: falling back to system fonts`);
     return undefined;
   }
+  if (extra.length) {
+    // only the characters the story uses (text=), so a CJK face is a few small files, not hundreds
+    // in batches of 300 characters, so a long story's URL stays well under what Google accepts
+    const chars = [...new Set(storyText.replace(/[\x00-\x7f]/g, ''))];
+    const eq = extra.map((fam) => `family=${encodeURIComponent(fam).replace(/%20/g, '+')}:wght@400;700`).join('&');
+    try {
+      for (let k = 0; k < chars.length; k += 300)
+        css += '\n' + execFileSync('curl', ['-fsSL', '--retry', '2', '-A', ua, `https://fonts.googleapis.com/css2?${eq}&display=block&text=${encodeURIComponent(chars.slice(k, k + 300).join(''))}`], {encoding: 'utf8'});
+    } catch {
+      console.error(`! could not fetch ${extra.join(', ')} from Google Fonts: ${extra.length > 1 ? 'those scripts' : 'that script'} may show as boxes`);
+    }
+  }
   css = css.replace(/url\((https:[^)]+)\)/g, (_, url) => {
-    const name = url.split('/').slice(-2).join('-').replace(/[^\w.-]/g, '_');
+    // named by the whole URL: subsets of one face differ only in a long query
+    const name = crypto.createHash('sha1').update(url).digest('hex').slice(0, 20) + (url.match(/\.(woff2?|ttf|otf)(?:$|\?)/)?.[0].replace('?', '') ?? '.woff2');
     const hit = path.join(cache, name);
     if (!fs.existsSync(hit)) execFileSync('curl', ['-fsSL', '--retry', '2', '-o', hit, url]);
     fs.copyFileSync(hit, path.join(dir, name));
@@ -135,10 +159,43 @@ const spoken = (t) => Object.entries(pron).reduce((s, [a, b]) => s.replace(new R
 const phrases = story.scenes.map((s) => (Array.isArray(s.say) ? s.say : s.say ? [s.say] : []));
 // a kinetic scene with `accelerate` speaks each beat a little faster than the last
 const quick = (i, j) => (story.scenes[i].accelerate ? 1 + 0.08 * j : 1);
-const lines = phrases.flatMap((ps, i) => ps.map((t, j) => ({id: `s${i}p${j}`, text: spoken(t), ...(quick(i, j) > 1 ? {speed: (v.speed ?? 1) * quick(i, j)} : {})})));
+// the languages Kokoro speaks: [its phonemizer's code, the default voice]. A voice's first letter is its language.
+const LANGS = {'en-us': ['en-us', 'af_heart'], 'en-gb': ['en-gb', 'bf_emma'], es: ['es', 'ef_dora'], fr: ['fr-fr', 'ff_siwis'], it: ['it', 'if_sara'], 'pt-br': ['pt-br', 'pf_dora'], hi: ['hi', 'hf_alpha'], ja: ['ja', 'jf_alpha'], zh: ['cmn', 'zf_xiaobei']};
+const BY_LETTER = {a: 'en-us', b: 'en-gb', e: 'es', f: 'fr', i: 'it', p: 'pt-br', h: 'hi', j: 'ja', z: 'zh'};
+const lang = v.lang ?? BY_LETTER[(v.voice ?? 'a')[0]] ?? 'en-us';
+if (!LANGS[lang]) throw new Error(`voice.lang "${lang}" is not one of ${Object.keys(LANGS).join(', ')}`);
+const voiceName = v.voice ?? LANGS[lang][1];
+if (v.voice && v.lang && BY_LETTER[v.voice[0]] !== lang) console.error(`! voice ${v.voice} is a ${BY_LETTER[v.voice[0]] ?? 'different'} voice; it will read the ${lang} text with an accent. ${LANGS[lang][1]} is a ${lang} voice`);
+// voice.files: a folder of recordings, one per phrase, named <scene>-<phrase> from 1 (2-1.wav is scene 2's first phrase)
+const recs = v.files ? path.resolve(run, v.files) : null;
+const recording = (i, j) => {
+  for (const ext of ['wav', 'mp3', 'm4a', 'flac', 'ogg']) { const p = path.join(recs, `${i + 1}-${j + 1}.${ext}`); if (fs.existsSync(p)) return p; }
+  return null;
+};
+if (recs) {
+  if (!fs.existsSync(recs)) throw new Error(`voice.files: no folder ${recs}`);
+  const missing = phrases.flatMap((ps, i) => ps.map((_, j) => (recording(i, j) ? null : `${i + 1}-${j + 1}`))).filter(Boolean);
+  if (missing.length) throw new Error(`voice.files: no recording for ${missing.join(', ')} in ${recs} (one file per phrase: <scene>-<phrase>.wav, from 1)`);
+  const want = new Set(phrases.flatMap((ps, i) => ps.map((_, j) => `${i + 1}-${j + 1}`)));
+  const extra = fs.readdirSync(recs).filter((n) => /^\d+-\d+\.\w+$/.test(n) && !want.has(n.replace(/\.\w+$/, '')));
+  if (extra.length) console.error(`! voice.files: not used (no phrase for them): ${extra.join(', ')}`);
+}
+const lines = phrases.flatMap((ps, i) => ps.map((t, j) => ({id: `s${i}p${j}`, ...(recs ? {file: recording(i, j)} : {text: spoken(t), ...(quick(i, j) > 1 ? {speed: (v.speed ?? 1) * quick(i, j)} : {})})})));
+// Japanese and Mandarin need misaki to read them (once; Japanese about 130 MB with its dictionary)
+if (!recs && (lang === 'ja' || lang === 'zh') && spawnSync(env.PYTHON, ['-c', `import misaki.${lang}`]).status !== 0) {
+  const name = lang === 'ja' ? 'Japanese' : 'Mandarin';
+  console.error(`installing the ${name} reader for the voice (once, about a minute)`);
+  const pkg = `misaki[${lang}]==0.9.4`;
+  const uv = spawnSync('uv', ['--version']).status === 0;
+  const r = spawnSync(uv ? 'uv' : env.PYTHON, uv ? ['pip', 'install', '-q', '--python', env.PYTHON, pkg] : ['-m', 'pip', 'install', '-q', pkg], {encoding: 'utf8'});
+  if (r.status !== 0) {
+    console.error(r.stderr?.trim().split('\n').slice(-6).join('\n'));
+    throw new Error(`could not install ${pkg} for the ${name} voice.${lang === 'ja' ? ' Its pyopenjtalk part builds from source where there is no ready wheel, which needs cmake and a C++ compiler (macOS: xcode-select --install; brew install cmake).' : ''} Or record your own voice: voice.files`);
+  }
+}
 const voiceDir = path.join(path.dirname(env.KOKORO_MODEL), '..', 'voice');
 const spec = path.join(run, '.lines.json');
-fs.writeFileSync(spec, JSON.stringify({voice: v.voice ?? 'af_heart', speed: v.speed ?? 1, lines}));
+fs.writeFileSync(spec, JSON.stringify({voice: voiceName, lang: LANGS[lang][0], speed: v.speed ?? 1, lines}));
 const clips = lines.length
   ? JSON.parse(execFileSync(env.PYTHON, ['-I', path.join(SKILL, 'scripts/voice.py'), spec, voiceDir, env.KOKORO_MODEL, env.KOKORO_VOICES], {encoding: 'utf8', maxBuffer: 1 << 24}).trim().split('\n').pop())
   : {};
@@ -299,10 +356,35 @@ if (m) {
 // --- captions: word timings for each phrase, then short lines of a few words ---
 // Kokoro gives no word timings, so they are estimated: the phrase splits at its punctuation, each break
 // lands on a silence found in the clip (voice.py), and the words between share the time by syllables.
-const syllables = (w) => /^[A-Z]{2,}\W*$/.test(w) ? w.replace(/\W/g, '').length : /\d/.test(w) ? w.replace(/\D/g, '').length + 1 : Math.max(1, (w.toLowerCase().replace(/e\b/, '').match(/[aeiouy]+/g) ?? []).length);
+const syllables = (w) => CJK.test(w) ? [...w].filter((ch) => CJK.test(ch)).length : /^[A-Z]{2,}\W*$/.test(w) ? w.replace(/\W/g, '').length : /\d/.test(w) ? w.replace(/\D/g, '').length + 1 : Math.max(1, (w.toLowerCase().replace(/e\b/, '').match(/[aeiouy]+/g) ?? []).length);
+// Japanese and Chinese have no spaces: each character is a word, and `j` marks a word that joins the next
+// with no space. Punctuation stays on the character before it.
+const CJK = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/;
+const PUNCT = /^[、。，．！？；：「」『』（）〜…・ー]$/;
+const OPEN = /^[「『（]$/;
+const tokens = (text) => text.replace(/\*/g, '').split(/\s+/).filter(Boolean).flatMap((part) => {
+  if (!CJK.test(part)) return [{t: part}];
+  const out = [];
+  let open = ''; // an opening bracket waits for the character after it
+  for (const ch of part) {
+    if (OPEN.test(ch)) { open += ch; continue; }
+    const last = out.at(-1)?.t.slice(-1) ?? '';
+    // closing punctuation stays on the character before; a Latin letter carries on a Latin run
+    if (out.length && !open && ((PUNCT.test(ch) && !OPEN.test(ch)) || (!CJK.test(ch) && !CJK.test(last) && !PUNCT.test(last)))) out.at(-1).t += ch;
+    else { out.push({t: open + ch}); open = ''; }
+  }
+  if (open) out.push({t: open});
+  out.forEach((w, k) => { if (k < out.length - 1) w.j = true; });
+  return out;
+});
+// words back into text, with spaces only where the text had them; and its width in Latin characters (CJK are double)
+const joined = (ws) => ws.map((w, k) => w.t + (k < ws.length - 1 && !w.j ? ' ' : '')).join('');
+const width = (s) => [...s].reduce((n, ch) => n + (CJK.test(ch) ? 2 : 1), 0);
+const BREAK = /[,;:.!?—–、。，！？；：]$/;
 function wordTimes(text, at, clip) {
-  const words = text.replace(/\*/g, '').split(/\s+/).filter(Boolean);
-  const breaks = words.slice(0, -1).map((w, k) => (/[,;:.!?—–]$/.test(w) ? k : -1)).filter((k) => k >= 0);
+  const toks = tokens(text);
+  const words = toks.map((w) => w.t);
+  const breaks = words.slice(0, -1).map((w, k) => (BREAK.test(w) ? k : -1)).filter((k) => k >= 0);
   let gaps = [...(clip.pauses ?? [])];
   if (gaps.length > breaks.length) gaps = gaps.sort((a, b) => (b[1] - b[0]) - (a[1] - a[0])).slice(0, breaks.length).sort((a, b) => a[0] - b[0]);
   const use = gaps.length === breaks.length;
@@ -316,7 +398,7 @@ function wordTimes(text, at, clip) {
     const ws = words.slice(a, b);
     const total = ws.reduce((n, w) => n + syllables(w) + 0.3, 0);
     let x = s0;
-    for (const w of ws) { const d = ((syllables(w) + 0.3) / total) * (s1 - s0); out.push({t: w, from: f(at + x), to: f(at + x + d)}); x += d; }
+    ws.forEach((w, n) => { const d = ((syllables(w) + 0.3) / total) * (s1 - s0); out.push({t: w, from: f(at + x), to: f(at + x + d), ...(toks[a + n].j ? {j: true} : {})}); x += d; });
   }
   return out;
 }
@@ -326,11 +408,12 @@ for (const ln of lines4captions) {
   const ws = wordTimes(ln.text, ln.at, ln.clip);
   // runs of words between punctuation (a lone word joins the next run), each cut into even lines
   const runs = [[]];
-  ws.forEach((w, k) => { runs.at(-1).push(w); if (/[,;:.!?—–]$/.test(w.t) && runs.at(-1).length >= 2 && k < ws.length - 1) runs.push([]); });
+  ws.forEach((w, k) => { runs.at(-1).push(w); if (BREAK.test(w.t) && runs.at(-1).length >= 2 && k < ws.length - 1) runs.push([]); });
   if (runs.length > 1 && runs.at(-1).length === 1 && runs.at(-2).length < MAX_WORDS) runs.at(-2).push(...runs.pop());
   for (const run of runs) {
-    let n = Math.ceil(run.length / MAX_WORDS);
-    const chars = run.map((w) => w.t).join(' ').length;
+    // a CJK character is a third of a word (lines stay a few words long), and twice as wide as a Latin letter
+    let n = Math.ceil(run.reduce((s, w) => s + (CJK.test(w.t) ? 1 / 3 : 1), 0) / MAX_WORDS);
+    const chars = width(joined(run));
     n = Math.min(run.length, Math.max(n, Math.ceil(chars / MAX_CHARS)));
     for (let k = 0; k < n; k++) {
       const part = run.slice(Math.round((k * run.length) / n), Math.round(((k + 1) * run.length) / n));
@@ -349,11 +432,11 @@ const subtitles = [];
 for (const ln of lines4subs) {
   const ws = wordTimes(ln.text, ln.at, ln.clip);
   let cue = [];
-  const flush = () => { if (cue.length) subtitles.push({from: cue[0].from, to: cue.at(-1).to, text: cue.map((w) => w.t).join(' ')}); cue = []; };
+  const flush = () => { if (cue.length) subtitles.push({from: cue[0].from, to: cue.at(-1).to, text: joined(cue)}); cue = []; };
   ws.forEach((w) => {
-    if (cue.length && [...cue, w].map((x) => x.t).join(' ').length > 84) flush();
+    if (cue.length && width(joined([...cue, w])) > 84) flush();
     cue.push(w);
-    if (/[.!?]$/.test(w.t) && cue.map((x) => x.t).join(' ').length > 30) flush();
+    if (/[.!?。！？]$/.test(w.t) && width(joined(cue)) > 30) flush();
   });
   flush();
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import {AbsoluteFill, Audio, Sequence, interpolate, useCurrentFrame} from 'remotion';
 import type {Props} from './types';
-import {BrandContext, asset, readable, sceneColors, setTypeScale, useFonts} from './ui';
+import {BrandContext, asset, readable, sceneColors, setFallback, setTypeScale, useFonts} from './ui';
 import {OVERLAP, Transitioned} from './transitions';
 import {SCENES} from './scenes';
 import {DEV_SCENES} from './devscenes';
@@ -15,6 +15,7 @@ import {Check} from './check';
 export const Video: React.FC<Props> = (p) => {
   useFonts(p.brand);
   setTypeScale(p.brand.typeScale);
+  setFallback(p.brand.fallback);
   const frame = useCurrentFrame();
   // music ducks to a third while the voice speaks, with a short ramp either side
   const duck = (f: number) => {

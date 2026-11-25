@@ -26,6 +26,12 @@ version with the date and bumps `plugin.json` to match.
   also checks the MP4s already rendered for broken, missing or black frames and one-frame flashes. A full render
   now runs the same video checks, and both exit 1 when something must be fixed
   ([#70](https://github.com/mtblck/reelwright/pull/70)).
+- Videos in other languages: `voice.lang` voices the story in Spanish, French, Italian, Brazilian Portuguese, Hindi,
+  Japanese or Mandarin as well as English, with a matching voice. Japanese, Chinese, Korean and Hindi text on screen
+  gets a Noto face so nothing shows as boxes, and captions and subtitles break Japanese and Chinese between
+  characters ([#71](https://github.com/mtblck/reelwright/pull/71)).
+- Your own voice: `voice.files` takes a folder of recordings, one per phrase, in place of Kokoro; timing follows each
+  recording ([#71](https://github.com/mtblck/reelwright/pull/71)).
 - Named targets: a `box` step in capture.mjs records where an element sits on a screenshot, and `cursor` and
   `zoom-pan` `focus` can name it (`"cursor": ["Export button"]`) instead of giving coordinates
   ([#67](https://github.com/mtblck/reelwright/pull/67)).

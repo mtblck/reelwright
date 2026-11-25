@@ -22,7 +22,7 @@ One file describes the whole video. `build.mjs` reads it from the run folder; pa
 | `brandJson` | A brand-kit `brand.json`. Colours by role (`primary`, `accent`, `paper`, `dark`, `support`, `ink`), `type.display` and `type.text`, and `logos.mark` (`file`, `dark`) for the mark on light and dark scenes. |
 | `brand` | Overrides, or the whole brand when there's no `brand.json` (with neither, the build uses `<run>/site-brand.json` from `brand.mjs`, and `brand` overrides that): `name`, `tagline`, `url`, `paper` (light background), `ink` (text on paper), `primary` (brand field, buttons on paper), `accent` (highlights, one per scene), `dark` (dark scene background), `display` and `text` (`{"family": "<Google Font>", "weight": 700}`), `mark` and `markDark` (square SVG or PNG), `logo` and `logoDark` (a wide logo, shown on light or on dark and brand `title` and `end` scenes in place of the mark and name), `radius` (card corners in px at 1080). |
 | `look` | The style over the whole video, on the brand's colours and fonts: `clean` (default: flat colour, `slide` cuts), `film` (grain, a soft vignette, a little gate weave and flicker, `splice` cuts), `terminal` (JetBrains Mono in place of the brand's fonts, scanlines, words that type on behind a block cursor with a soft glow, hard `cut`s; good for CLIs and dev tools), `poster` (capitals a size up, a slab of the brand colour along one edge, the scene's number huge and cropped in a corner, hard `cut`s; for hype cuts), `blueprint` (grid paper, crop marks and a dimension line drawn on at each scene, `fade`s; for libraries, infra and APIs), `paper` (stop motion at 12 frames a second with a little shake, paper grain and a torn paper edge round the frame), `sketch` (every line boils, starred words get a marker scribbled under them, `fade`s; `paper` and `sketch` suit playful brands and indie projects) or `isometric` (devices, windows and list cards tilted in 3D and drifting for depth, `zoom`s; for SaaS dashboards). A look sets the default `enter`; a scene's own `enter` still wins. Film, paper and sketch MP4s are 2 to 3 times the size of clean ones (grain and boil don't compress); the GIF is made from a pass without the look's layers so it stays small. |
-| `voice` | `voice` (Kokoro voice id, default `af_heart`), `speed` (default 1), `pronounce` (`{"written": "spoken"}`, whole words, case-insensitive). |
+| `voice` | `lang` (`en-us` default, `en-gb`, `es`, `fr`, `it`, `pt-br`, `hi`, `ja`, `zh`; write the story's text in that language), `voice` (Kokoro voice id; default `af_heart`, or the language's: `bf_emma`, `ef_dora`, `ff_siwis`, `if_sara`, `pf_dora`, `hf_alpha`, `jf_alpha`, `zf_xiaobei`; a voice's first letter is its language, so `jm_kumo` alone sets Japanese), `speed` (default 1), `pronounce` (`{"written": "spoken"}`, whole words, case-insensitive), or `files`: a folder of your own recordings in the run, one per phrase, named `<scene>-<phrase>` from 1 (`2-1.wav` is scene 2's first phrase; wav, mp3, m4a, flac or ogg) used in place of Kokoro. See Languages and recordings below. |
 | `music` | `mood` (`bright` 112 bpm, `calm` 88 bpm, `tech` 120 bpm minor, `lofi` 80 bpm swung with tape crackle, `cinematic` 72 bpm minor with no kit, an ostinato and a build, `minimal` 100 bpm with a kick, a held bass and a sparse arpeggio; `minimal` and `lofi` sit well under the `terminal` and `film` looks), `volume` (default 0.22; it dips to a third under the voice), `bpm`, `key` (`C` to `B`), `seed` (another arrangement of the same mood), `end` (`"tapestop"`: the bed slows to a stop on the last bar line instead of fading), or `file` for your own track (add its `bpm` to sync cuts to it). `false` for none. |
 | `captions` | Burned-in captions: the line being spoken, a few words at a time, the word being said lit in the accent, inside the platform safe zones. On by default in the vertical, portrait and square cuts (feeds play muted), off in landscape. `true` for all four, `false` for none, or a list such as `["vertical"]`. A scene's own `"captions": false` leaves it uncaptioned (say, an end card whose words are already on screen). Word timings are estimated from each phrase's pauses and syllables. |
 | `sfx` | `false` turns the sound effects off. Otherwise they're placed for you, all quiet under the voice: a whoosh on moving cuts, ticks on list items, a sub drop under the `title`, a riser into a `reframe`, a click and chime on the end button, a click for each cursor target, a hit on a stinger. |
@@ -81,6 +81,31 @@ Better, name them: when capture.mjs takes the screenshot, a `box` step records w
 ```
 
 A box step belongs to the next shot; a shot's `boxes` map names to selectors (an empty selector finds the element by its text, which is the name). They're saved in `media/<device>-boxes.json`, and the build says which names a shot has if one is missing.
+## Languages and recordings
+
+Kokoro speaks nine languages. Set `voice.lang` and write every `say` and on-screen line in it:
+
+```json
+"voice": {"lang": "ja"},
+"scenes": [{"type": "statement", "bg": "dark", "text": "リポジトリから、*動画*を。", "say": ["リポジトリから、動画を作ります。"]}]
+```
+
+Stars work in Japanese and Chinese as they do in English, around the characters to light. Japanese, Chinese, Korean
+and Hindi text gets a Noto face after the brand's fonts (cut down to the characters used), so nothing shows as
+boxes; captions and subtitles break Japanese and Chinese between characters, since they have no spaces. The first
+Japanese or Mandarin build installs a reader for the voice (about a minute, once).
+
+To use your own voice, record each phrase as its own file and point `voice.files` at the folder:
+
+```json
+"voice": {"files": "voice"},
+"scenes": [{"type": "statement", "say": ["Your project is ready.", "Its video isn't."], ...}]
+```
+
+with `voice/1-1.wav` and `voice/1-2.wav` beside `story.json`. The `say` text still sets the captions and subtitles, so
+keep it word for word. Silence at each file's start and end is trimmed, and timing follows each file's length.
+A missing file stops the build and names it.
+
 ## Subtitles and chapters
 
 Every cut gets `<name>-<format>.srt` and `.vtt` beside its MP4 (short cuts too), timed to the voice, with each
