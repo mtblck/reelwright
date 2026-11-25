@@ -24,7 +24,7 @@
 
 <p align="center">
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-0F4C4A" /></a>
-  <a href="CHANGELOG.md"><img alt="Version 0.1.0" src="https://img.shields.io/badge/version-0.1.0-0F4C4A" /></a>
+  <a href="CHANGELOG.md"><img alt="Version 0.2.0" src="https://img.shields.io/badge/version-0.2.0-0F4C4A" /></a>
   <a href="https://github.com/mtblck/claude-marketplace"><img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude_Code-plugin-0F4C4A" /></a>
   <a href="https://www.remotion.dev/"><img alt="Renders with Remotion" src="https://img.shields.io/badge/renders_with-Remotion-0F4C4A" /></a>
   <a href="https://mattblack.space/skills/reelwright/"><img alt="Live at mattblack.space" src="https://img.shields.io/badge/live-mattblack.space-D9661F" /></a>
