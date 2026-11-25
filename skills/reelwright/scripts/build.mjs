@@ -333,13 +333,13 @@ for (const ln of lines4subs) {
   flush();
 }
 // each cue stays up a little past its last word, but never into the next one
-subtitles.forEach((c, k) => { const next = subtitles[k + 1]; c.to = Math.min(c.to + 12, next ? next.from - 1 : total); });
+subtitles.forEach((c, k) => { const next = subtitles[k + 1]; c.to = Math.max(c.from + 1, Math.min(c.to + 12, next ? next.from - 1 : total)); });
 // chapters, one per scene (a scene's `chapter` names it), joined until each runs 10 s, as YouTube asks
 const sceneName = (s, i) => {
   if (story.scenes[i].chapter) return story.scenes[i].chapter;
-  if (s.type === 'title') return s.props.name ?? brand.name;
-  const first = (phrases[i][0] ?? s.type).replace(/\*/g, '').replace(/[.!?,;:]+$/, '');
-  return first.length > 40 ? first.slice(0, first.lastIndexOf(' ', 40)) + '…' : first;
+  const first = ((s.type === 'title' && (s.props.name ?? brand.name)) || phrases[i][0] || s.type).replace(/\*/g, '').replace(/[.!?,;:]+$/, '').trim();
+  const k = first.lastIndexOf(' ', 40);
+  return first.length > 40 ? first.slice(0, k > 10 ? k : 40) + '…' : first;
 };
 const chapters = [];
 scenes.forEach((s, i) => {

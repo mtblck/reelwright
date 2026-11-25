@@ -70,13 +70,13 @@ show it (and search can read it).
 With the landscape cut, `<name>-chapters.txt` lists chapter marks to paste into a YouTube description:
 
 ```
-0:00 Meet Inlay
+0:00 Inlay
 0:13 Free, private, open
-0:24 Try it
+0:24 Try Inlay, free
 ```
 
 Scenes join until each chapter runs 10 seconds, and YouTube only shows chapters when there are three or more,
-so a 20 to 40 second video rarely gets them; render.mjs says so. Name a chapter with the scene's `chapter`.
+so a 20 to 40 second video rarely gets them: render.mjs writes the file only when it does, and says so when it doesn't. Name a chapter with the scene's `chapter`.
 
 ## Short cuts
 

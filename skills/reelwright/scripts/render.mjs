@@ -145,12 +145,12 @@ for (const {fmt, raw, out} of outs) {
   subs(out.replace(/\.mp4$/, ''));
 }
 // chapter marks for the landscape cut (the one that goes to YouTube), to paste into its description
-if (formats.includes('landscape') && props.chapters?.length) {
+if (formats.includes('landscape') && !length && props.chapters?.length >= 3) {
   const file = path.join(run, `${slug}-chapters.txt`);
   const mmss = (fr) => { const t = Math.round(fr / 30); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
   fs.writeFileSync(file, props.chapters.map((c) => `${mmss(c.at)} ${c.title}`).join('\n') + '\n');
-  console.log(file + (props.chapters.length < 3 ? '  (YouTube shows chapters only with 3 or more of 10 s each: this video is too short for them)' : ''));
-}
+  console.log(file);
+} else if (formats.includes('landscape') && !length) console.log('no chapters: YouTube shows them only with 3 or more of 10 s each, and this video is too short');
 // poster and GIF from the first format
 const first = outs[0];
 if (first) {
@@ -180,11 +180,21 @@ if (first) {
 function subs(base) {
   if (!props.subtitles?.length) return;
   const stamp = (fr, sep) => { const ms = Math.round((fr / 30) * 1000); const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, sec = Math.floor(ms / 1000) % 60; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}${sep}${String(ms % 1000).padStart(3, '0')}`; };
-  // two lines at most, broken near the middle
-  const wrap = (t) => { if (t.length <= 42) return t; const mid = t.length / 2; let k = -1; for (let i = 0; i < t.length; i++) if (t[i] === ' ' && (k < 0 || Math.abs(i - mid) < Math.abs(k - mid))) k = i; return k < 0 ? t : `${t.slice(0, k)}\n${t.slice(k + 1)}`; };
-  const cues = props.subtitles.map((c) => [stamp(c.from, ','), stamp(c.to, ','), wrap(c.text)]);
+  // two lines at most: the break nearest the middle that keeps both within 42 characters, if there is one
+  const wrap = (t) => {
+    if (t.length <= 42) return t;
+    const spaces = [...t].map((ch, i) => (ch === ' ' ? i : -1)).filter((i) => i > 0);
+    const fits = spaces.filter((i) => i <= 42 && t.length - i - 1 <= 42);
+    const pool = fits.length ? fits : spaces;
+    const k = pool.sort((a, b) => Math.abs(a - t.length / 2) - Math.abs(b - t.length / 2))[0];
+    return k == null ? t : `${t.slice(0, k)}\n${t.slice(k + 1)}`;
+  };
+  // "-->" would read as a timing line; WebVTT also reads & < > as markup
+  const safe = (t) => t.replace(/-->/g, '→');
+  const vtt = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const cues = props.subtitles.map((c) => [stamp(c.from, ','), stamp(c.to, ','), wrap(safe(c.text))]);
   fs.writeFileSync(`${base}.srt`, cues.map(([a, b, t], i) => `${i + 1}\n${a} --> ${b}\n${t}\n`).join('\n'));
-  fs.writeFileSync(`${base}.vtt`, 'WEBVTT\n\n' + cues.map(([a, b, t]) => `${a.replace(',', '.')} --> ${b.replace(',', '.')}\n${t}\n`).join('\n'));
+  fs.writeFileSync(`${base}.vtt`, 'WEBVTT\n\n' + cues.map(([a, b, t]) => `${a.replace(',', '.')} --> ${b.replace(',', '.')}\n${vtt(t)}\n`).join('\n'));
 }
 
 // first loudnorm pass: what the mix measures, so the second pass lands on target
