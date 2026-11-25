@@ -7,7 +7,8 @@
 //   node render.mjs <run_dir> check [--formats square,vertical]     text too small, low contrast, off the frame, in a
 //     vertical app's buttons, or not on screen long enough to read; and black, short or broken frames in the MP4s
 //     already rendered. Exits 1 when something must be fixed.
-//   node render.mjs <run_dir> [--formats square,vertical,portrait,landscape] [--no-gif] [--length 6|15]
+//   node render.mjs <run_dir> [--formats square,vertical,portrait,landscape,appstore,appstore-ipad] [--no-gif] [--length 6|15]
+// appstore (886 x 1920) and appstore-ipad (1200 x 1600) are App Store previews: 15 to 30 s, encoded to Apple's spec.
 // --length renders a short cut that build.mjs --length made: <name>-<n>s-<format>.mp4.
 // Writes <run>/<name>-<format>.mp4 at -14 LUFS, <name>-poster.png and <name>.gif (from the first format),
 // <name>-<format>.srt and .vtt (subtitles), <name>-chapters.txt with the landscape cut,
@@ -30,7 +31,10 @@ if (!args[0] || !fs.existsSync(propsFile)) {
 }
 const opt = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d);
 // the compositions in template/src/Root.tsx, checked before the slow bundle step
-const FORMATS = ['square', 'vertical', 'portrait', 'landscape'];
+const FORMATS = ['square', 'vertical', 'portrait', 'landscape', 'appstore', 'appstore-ipad'];
+// App Store app previews (App Store Connect's app preview specifications): 15 to 30 s, 30 fps, H.264 up to High
+// profile level 4.0 at 10 to 12 Mbps, stereo AAC 256 kbps at 44.1 or 48 kHz, under 500 MB
+const STORE = {appstore: [886, 1920], 'appstore-ipad': [1200, 1600]};
 for (const f of [...String(opt('--formats', '')).split(','), opt('--format', '')].map((x) => x.trim()).filter(Boolean)) if (!FORMATS.includes(f)) { console.error(`no format "${f}": use ${FORMATS.join(', ')}`); process.exit(1); }
 const env = Object.fromEntries(
   execFileSync('bash', [path.join(SKILL, 'scripts/setup.sh')], {encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit']})
@@ -54,7 +58,7 @@ const SAFE = {tiktok: [150, 480, 60, 140], reels: [250, 420, 60, 120], shorts: [
 // the frame where every reveal in a scene has happened: just before the cut, and never past it
 const settled = (s) => Math.min(s.start + Math.min(s.dur - 1, Math.max(s.cues.at(-1) + 24, s.dur - 10)), props.durationInFrames - 1);
 // The smallest text each cut can carry, in pixels at 1080 on the short side: a phone held upright needs the most.
-const MIN_PX = {vertical: 30, portrait: 26, square: 26, landscape: 22};
+const MIN_PX = {vertical: 30, portrait: 26, square: 26, landscape: 22, appstore: 30, 'appstore-ipad': 26};
 const where = (fr) => { const i = props.scenes.findLastIndex((s) => s.start <= fr); return i < 0 ? '' : `scene ${i + 1} (${props.scenes[i].type})`; };
 const lum = ([r, g, b]) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
 const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
@@ -155,6 +159,11 @@ if (args[1] === 'loop') {
 }
 
 const formats = opt('--formats', 'square,vertical').split(',').map((s) => s.trim()).filter(Boolean);
+const store = formats.filter((f) => STORE[f]);
+if (store.length) {
+  const secs = props.durationInFrames / 30;
+  if (secs < 15 || secs > 30) { console.error(`${store.join(', ')}: an App Store preview runs 15 to 30 s, and this one is ${secs.toFixed(1)} s. ${secs > 30 ? 'Build a short cut (build.mjs --length 15, then render.mjs --length 15) or cut words' : length ? 'Render the full story, or a longer cut' : 'Add a scene, or a hold on one'}.`); process.exit(1); }
+}
 const outs = [];
 const checked = [];
 for (const fmt of formats) {
@@ -167,7 +176,8 @@ for (const fmt of formats) {
 for (const {fmt, raw, out} of outs) {
   const stats = measure(raw);
   const af = stats ? `loudnorm=I=-14:TP=-1.5:LRA=11:measured_I=${stats.input_i}:measured_TP=${stats.input_tp}:measured_LRA=${stats.input_lra}:measured_thresh=${stats.input_thresh}:offset=${stats.target_offset}:linear=true` : 'loudnorm=I=-14:TP=-1.5:LRA=11';
-  ff('-i', raw, '-c:v', 'copy', '-af', af, '-ar', '48000', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', out);
+  if (STORE[fmt]) ff('-i', raw, '-c:v', 'libx264', '-profile:v', 'high', '-level:v', '4.0', '-b:v', '11M', '-maxrate', '12M', '-bufsize', '24M', '-pix_fmt', 'yuv420p', '-r', '30', '-af', af, '-ac', '2', '-ar', '48000', '-c:a', 'aac', '-b:a', '256k', '-movflags', '+faststart', out);
+  else ff('-i', raw, '-c:v', 'copy', '-af', af, '-ar', '48000', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', out);
   fs.rmSync(raw);
   const secs = props.durationInFrames / 30;
   ff('-i', out, '-vf', `fps=1,scale=${fmt === 'landscape' ? 384 : 270}:-1,tile=6x${Math.ceil(secs / 6)}:padding=4:color=white`, '-frames:v', '1', path.join(run, `qa${suffix}-${fmt}.png`));
@@ -291,6 +301,22 @@ function checkVideo(file, fmt) {
   for (let i = 1; i < ys.length - 1; i++) {
     const a = ys[i] - ys[i - 1], b = ys[i + 1] - ys[i];
     if (Math.abs(a) > 50 && Math.abs(b) > 50 && Math.sign(a) !== Math.sign(b)) add('warn', where(i), `a one-frame flash at ${(i / 30).toFixed(2)} s`);
+  }
+  if (STORE[fmt]) {
+    // what App Store Connect checks on upload
+    const pr = JSON.parse(spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'stream=codec_type,codec_name,profile,level,width,height,r_frame_rate,channels,sample_rate,bit_rate:format=duration,size', '-of', 'json', file], {encoding: 'utf8'}).stdout || '{}');
+    const v = pr.streams?.find((s) => s.codec_type === 'video') ?? {};
+    const a = pr.streams?.find((s) => s.codec_type === 'audio') ?? {};
+    const dur = Number(pr.format?.duration), size = Number(pr.format?.size);
+    const bad = [
+      v.width !== STORE[fmt][0] || v.height !== STORE[fmt][1] ? `is ${v.width} x ${v.height}, not ${STORE[fmt].join(' x ')}` : '',
+      v.codec_name !== 'h264' || v.profile !== 'High' || !(v.level <= 40) ? `video is ${v.codec_name} ${v.profile} level ${v.level / 10}, not H.264 High up to 4.0` : '',
+      v.r_frame_rate !== '30/1' ? `runs at ${v.r_frame_rate} fps, not 30` : '',
+      !(dur >= 15 && dur <= 30.05) ? `lasts ${dur.toFixed(1)} s; previews run 15 to 30 s` : '',
+      a.codec_name !== 'aac' || a.channels !== 2 || !['44100', '48000'].includes(a.sample_rate) ? `audio is ${a.codec_name} with ${a.channels} channels at ${a.sample_rate} Hz, not stereo AAC at 44.1 or 48 kHz` : '',
+      !(size < 500e6) ? `is ${(size / 1e6).toFixed(0)} MB; the limit is 500` : '',
+    ].filter(Boolean);
+    for (const m of bad) add('fail', '', `App Store: ${m}`);
   }
   return out;
 }

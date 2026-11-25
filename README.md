@@ -62,6 +62,7 @@ Every scene is laid out for each shape, not cropped from one, so the same story 
 | `<name>-square.mp4` | 1080 × 1080 | Feeds on X, LinkedIn, Instagram |
 | `<name>-portrait.mp4` | 1080 × 1350 | Instagram and LinkedIn feeds (4:5, with `--formats portrait`) |
 | `<name>-landscape.mp4` | 1920 × 1080 | Websites, YouTube, slides |
+| `<name>-appstore.mp4`, `-appstore-ipad.mp4` | 886 × 1920, 1200 × 1600 | App Store app previews, 15 to 30 s (with `--formats appstore,appstore-ipad`) |
 | `<name>.gif` | 540 wide | READMEs and docs (made from the first format in `--formats`) |
 | `<name>-<format>.srt`, `.vtt` | Text | Subtitles to upload with each cut |
 | `<name>-poster.png` | Size of the first format | Video player poster and thumbnails |

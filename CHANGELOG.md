@@ -32,6 +32,10 @@ version with the date and bumps `plugin.json` to match.
   characters ([#71](https://github.com/mtblck/reelwright/pull/71)).
 - Your own voice: `voice.files` takes a folder of recordings, one per phrase, in place of Kokoro; timing follows each
   recording ([#71](https://github.com/mtblck/reelwright/pull/71)).
+- App Store previews: `render.mjs --formats appstore,appstore-ipad` renders 886 × 1920 (iPhone) and 1200 × 1600
+  (iPad) cuts encoded to Apple's spec, with no burned-in captions; it refuses a video outside 15 to 30 s and checks
+  each file after rendering. A `tablet` frame for `screen`, with `capture.mjs --device tablet` to fill it
+  ([#72](https://github.com/mtblck/reelwright/pull/72)).
 - Named targets: a `box` step in capture.mjs records where an element sits on a screenshot, and `cursor` and
   `zoom-pan` `focus` can name it (`"cursor": ["Export button"]`) instead of giving coordinates
   ([#67](https://github.com/mtblck/reelwright/pull/67)).
