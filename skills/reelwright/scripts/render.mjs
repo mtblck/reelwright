@@ -4,6 +4,9 @@
 //     --safe shades where that app's buttons and text cover a vertical video (approximate, 1080 x 1920)
 //   node render.mjs <run_dir> loop [--format landscape] [--seconds 5] [--scene n | --from <s>]   a silent seamless loop
 //     -> <name>-loop.mp4, .webm and .gif (under 5 MB), for a README or landing page
+//   node render.mjs <run_dir> check [--formats square,vertical]     text too small, low contrast, off the frame, in a
+//     vertical app's buttons, or not on screen long enough to read; and black, short or broken frames in the MP4s
+//     already rendered. Exits 1 when something must be fixed.
 //   node render.mjs <run_dir> [--formats square,vertical,portrait,landscape] [--no-gif] [--length 6|15]
 // --length renders a short cut that build.mjs --length made: <name>-<n>s-<format>.mp4.
 // Writes <run>/<name>-<format>.mp4 at -14 LUFS, <name>-poster.png and <name>.gif (from the first format),
@@ -12,7 +15,8 @@
 import {execFileSync, spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import {fileURLToPath} from 'node:url';
+import {createRequire} from 'node:module';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 
 const SKILL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
@@ -21,7 +25,7 @@ const length = args.includes('--length') ? Number(args[args.indexOf('--length') 
 const suffix = length ? `-${length}s` : '';
 const propsFile = path.join(run, `props${suffix}.json`);
 if (!args[0] || !fs.existsSync(propsFile)) {
-  console.error('usage: node render.mjs <run_dir> [stills|loop] [--formats square,vertical,portrait,landscape] [--no-gif]   (run build.mjs first, with the same --length)');
+  console.error('usage: node render.mjs <run_dir> [stills|check|loop] [--formats square,vertical,portrait,landscape] [--no-gif]   (run build.mjs first, with the same --length)');
   process.exit(1);
 }
 const opt = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d);
@@ -44,18 +48,26 @@ const remotion = (cmd, comp, out, extra = []) =>
   execFileSync('npx', ['remotion', cmd, bundle, comp, out, `--props=${propsFile}`, '--log=error',
     ...(env.BROWSER ? [`--browser-executable=${env.BROWSER}`] : []), ...extra], {cwd: env.TEMPLATE, stdio: ['ignore', 'inherit', 'inherit']});
 const ff = (...a) => execFileSync('ffmpeg', ['-v', 'error', '-y', ...a]);
+// the parts of a vertical video an app covers with its own buttons, captions and tabs, in pixels at
+// 1080 x 1920: [top, bottom, left, right]. Approximate, and they shift between app versions.
+const SAFE = {tiktok: [150, 480, 60, 140], reels: [250, 420, 60, 120], shorts: [140, 400, 60, 190]};
+// the frame where every reveal in a scene has happened: just before the cut
+const settled = (s) => Math.min(s.start + Math.max(s.cues.at(-1) + 24, s.dur - 10), props.durationInFrames - 1);
+// The smallest text each cut can carry, in pixels at 1080 on the short side: a phone held upright needs the most.
+const MIN_PX = {vertical: 30, portrait: 26, square: 26, landscape: 22};
+const where = (fr) => { const i = props.scenes.findLastIndex((s) => s.start <= fr); return i < 0 ? '' : `scene ${i + 1} (${props.scenes[i].type})`; };
+const lum = ([r, g, b]) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+const blend = (fg, bg, a) => [0, 1, 2].map((i) => fg[i] * a + bg[i] * (1 - a));
+
 
 if (args[1] === 'stills') {
   const fmt = opt('--format', 'square');
   const dir = path.join(run, 'stills');
   fs.rmSync(dir, {recursive: true, force: true});
   fs.mkdirSync(dir, {recursive: true});
-  // the moment every reveal in the scene has happened: just before the cut
-  const frames = props.scenes.map((s) => s.start + Math.max(s.cues.at(-1) + 24, s.dur - 10));
-  for (const [i, fr] of frames.entries()) remotion('still', fmt, path.join(dir, `s${String(i + 1).padStart(2, '0')}.png`), [`--frame=${Math.min(fr, props.durationInFrames - 1)}`]);
-  // the parts of a vertical video an app covers with its own buttons, captions and tabs, in pixels at
-  // 1080 x 1920: [top, bottom, left, right]. Approximate, and they shift between app versions.
-  const SAFE = {tiktok: [150, 480, 60, 140], reels: [250, 420, 60, 120], shorts: [140, 400, 60, 190]};
+  const frames = props.scenes.map(settled);
+  for (const [i, fr] of frames.entries()) remotion('still', fmt, path.join(dir, `s${String(i + 1).padStart(2, '0')}.png`), [`--frame=${fr}`]);
   const safe = opt('--safe');
   if (safe) {
     if (!SAFE[safe]) throw new Error(`--safe is one of ${Object.keys(SAFE).join(', ')}`);
@@ -68,7 +80,18 @@ if (args[1] === 'stills') {
   const cols = Math.min(3, frames.length);
   ff('-pattern_type', 'glob', '-i', path.join(dir, 's*.png'), '-vf', `scale=480:-1,tile=${cols}x${Math.ceil(frames.length / cols)}:padding=8:color=white`, '-frames:v', '1', path.join(dir, 'sheet.png'));
   console.log(path.join(dir, 'sheet.png'));
+  console.log(`next: node render.mjs ${args[0]} check --formats ${fmt} lists text that's too small, faint or off the frame`);
   process.exit(0);
+}
+
+if (args[1] === 'check') {
+  const fmts = String(opt('--formats', opt('--format', 'square,vertical'))).split(',').map((s) => s.trim()).filter(Boolean);
+  const found = [...(await lint(fmts))];
+  for (const fmt of fmts) {
+    const mp4 = path.join(run, `${slug}-${fmt}.mp4`);
+    if (fs.existsSync(mp4)) found.push(...checkVideo(mp4, fmt));
+  }
+  process.exit(report(found) ? 1 : 0);
 }
 
 if (args[1] === 'loop') {
@@ -130,6 +153,7 @@ if (args[1] === 'loop') {
 
 const formats = opt('--formats', 'square,vertical').split(',').map((s) => s.trim()).filter(Boolean);
 const outs = [];
+const checked = [];
 for (const fmt of formats) {
   const raw = path.join(run, `.raw-${fmt}.mp4`);
   const out = path.join(run, `${slug}-${fmt}.mp4`);
@@ -145,6 +169,7 @@ for (const {fmt, raw, out} of outs) {
   const secs = props.durationInFrames / 30;
   ff('-i', out, '-vf', `fps=1,scale=${fmt === 'landscape' ? 384 : 270}:-1,tile=6x${Math.ceil(secs / 6)}:padding=4:color=white`, '-frames:v', '1', path.join(run, `qa${suffix}-${fmt}.png`));
   console.log(`${out}  (${secs.toFixed(1)} s)`);
+  checked.push(...checkVideo(out, fmt));
   subs(out.replace(/\.mp4$/, ''));
 }
 // chapter marks for the landscape cut (the one that goes to YouTube), to paste into its description
@@ -177,6 +202,99 @@ if (first) {
     if (src !== first.out) fs.rmSync(src);
     console.log(`${gif}  (${(fs.statSync(gif).size / 1e6).toFixed(1)} MB)`);
   }
+}
+
+// a broken render fails loudly, after everything else is written
+if (report(checked)) process.exit(1);
+
+// ---- checks -------------------------------------------------------------------------------------------
+// render each scene's settled frame with props.check set; check.tsx reports every piece of text on it
+async function lint(fmts) {
+  const req = createRequire(path.join(env.TEMPLATE, 'package.json'));
+  const R = await import(pathToFileURL(req.resolve('@remotion/renderer')).href);
+  const inputProps = {...props, check: true};
+  const out = [];
+  const words = new Map(); // scene -> words on screen, from the first cut
+  const tmp = path.join(run, '.check.png');
+  for (const fmt of fmts) {
+    const composition = await R.selectComposition({serveUrl: bundle, id: fmt, inputProps, browserExecutable: env.BROWSER || null, logLevel: 'error'});
+    const {width: w, height: h} = composition;
+    const u = Math.min(w, h) / 1080;
+    const seen = new Set();
+    for (const [i, s] of props.scenes.entries()) {
+      let items = [];
+      await R.renderStill({composition, serveUrl: bundle, frame: settled(s), output: tmp, inputProps, browserExecutable: env.BROWSER || null, logLevel: 'error',
+        onBrowserLog: (l) => { if (l.text.startsWith('RW-CHECK ')) items = JSON.parse(l.text.slice(9)); }});
+      const at = `scene ${i + 1} (${s.type})`;
+      const add = (level, msg, key) => { if (!seen.has(key)) { seen.add(key); out.push({level, fmt, at, msg}); } };
+      for (const it of items) {
+        const [x, y, bw, bh] = it.box;
+        if (it.op < 0.05 || bw < 1 || bh < 1 || x > w || y > h || x + bw < 0 || y + bh < 0) continue;
+        const q = `"${it.show.length > 40 ? it.show.slice(0, 40) + '…' : it.show}"`;
+        if (it.op >= 0.5 && (x < -4 || y < -4 || x + bw > w + 4 || y + bh > h + 4)) add('fail', `${q} runs off the frame`, `off${it.text}`);
+        const min = MIN_PX[fmt] * u;
+        if (it.op >= 0.5 && it.px < min - 0.5) add('fail', `${q} is ${Math.round(it.px / u)} px; the ${fmt} cut needs ${MIN_PX[fmt]} or more`, `px${it.text}`);
+        // faded on purpose (a dimmed line, a word still to come) or over a picture: not measured
+        if (it.bg && it.op >= 0.9) {
+          const need = it.px >= 40 * u ? 3 : 4.5;
+          const r = ratio(blend(it.color, it.bg, it.color[3] * it.op), it.bg);
+          if (r < need) add('fail', `${q} has contrast ${r.toFixed(1)}:1 against its background; it needs ${need}:1 at this size`, `cr${it.text}`);
+        }
+        if (fmt === 'vertical') {
+          const k = w / 1080;
+          // the bars top and bottom run the full width; the button rails at the sides only down the lower half
+          const low = y + bh > h * 0.45;
+          const apps = Object.entries(SAFE).filter(([, [t, b, l, r]]) => y < t * k || y + bh > h - b * k || (low && (x < l * k || x + bw > w - r * k))).map(([a]) => a);
+          if (apps.length && it.op >= 0.5) add('warn', `${q} sits where ${apps.join(', ')} put their buttons or caption`, `safe${it.text}`);
+        }
+        if (it.op >= 0.5 && !it.caption && !words.has(`${i}:${fmt}`)) words.set(`${i}:${fmt}`, 0);
+        if (it.op >= 0.5 && !it.caption) words.set(`${i}:${fmt}`, words.get(`${i}:${fmt}`) + it.text.split(/\s+/).length);
+      }
+    }
+  }
+  fs.rmSync(tmp, {force: true});
+  // reading time: a second, then about 4 words a second (the voice reads along), from the first reveal to the cut
+  for (const [i, s] of props.scenes.entries()) {
+    const n = Math.max(...fmts.map((f) => words.get(`${i}:${f}`) ?? 0));
+    const on = (s.dur - (s.cues[0] ?? 0)) / 30;
+    const need = 1 + n / 4;
+    if (n && on < need) out.push({level: 'warn', fmt: 'all', at: `scene ${i + 1} (${s.type})`, msg: `${n} words on screen for ${on.toFixed(1)} s; give it about ${need.toFixed(1)} s ("hold": ${(need - on).toFixed(1)}) or fewer words`});
+  }
+  return out;
+}
+
+// a rendered MP4: it decodes cleanly, has every frame, has no black frames and no one-frame flashes
+function checkVideo(file, fmt) {
+  const out = [];
+  const name = path.basename(file);
+  const add = (level, at, msg) => out.push({level, fmt, at, msg: `${name}: ${msg}`});
+  const dec = spawnSync('ffmpeg', ['-v', 'error', '-i', file, '-map', '0:v', '-f', 'null', '-'], {encoding: 'utf8'});
+  if (dec.status !== 0 || dec.stderr.trim()) add('fail', '', `doesn't decode cleanly: ${(dec.stderr.trim().split('\n')[0] || `ffmpeg exited ${dec.status}`)}`);
+  const n = parseInt(spawnSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-count_packets', '-show_entries', 'stream=nb_read_packets', '-of', 'csv=p=0', file], {encoding: 'utf8'}).stdout.trim(), 10);
+  if (!(Math.abs(n - props.durationInFrames) <= 1)) add('fail', '', `has ${Number.isNaN(n) ? 'no readable' : n} frames, the timeline ${props.durationInFrames}: render it again`);
+  // black: darker than any of the brand's backgrounds (a brand whose dark is black can't be told apart, so it isn't checked)
+  const y8 = (hex) => { const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const darkest = Math.min(...[props.brand.dark, props.brand.paper, props.brand.primary].map(y8));
+  if (darkest > 12) {
+    const black = spawnSync('ffmpeg', ['-i', file, '-vf', `blackdetect=d=0.03:pic_th=0.98:pix_th=${Math.min(0.1, (darkest - 6) / 255).toFixed(3)}`, '-an', '-f', 'null', '-'], {encoding: 'utf8'}).stderr;
+    for (const m of black.matchAll(/black_start:([\d.]+) black_end:([\d.]+)/g)) add('fail', where(Math.round(Number(m[1]) * 30)), `black from ${Number(m[1]).toFixed(2)} to ${Number(m[2]).toFixed(2)} s`);
+  }
+  // brightness of each frame (0 to 255); a frame far brighter or darker than both its neighbours is a flash
+  const ys = [...spawnSync('ffmpeg', ['-i', file, '-vf', 'scale=96:-2,signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=-', '-an', '-f', 'null', '-'], {encoding: 'utf8', maxBuffer: 64e6}).stdout.matchAll(/YAVG=([\d.]+)/g)].map((m) => Number(m[1]));
+  for (let i = 1; i < ys.length - 1; i++) {
+    const a = ys[i] - ys[i - 1], b = ys[i + 1] - ys[i];
+    if (Math.abs(a) > 50 && Math.abs(b) > 50 && Math.sign(a) !== Math.sign(b)) add('warn', where(i), `a one-frame flash at ${(i / 30).toFixed(2)} s`);
+  }
+  return out;
+}
+
+// print what was found, worst first; true when something must be fixed
+function report(found) {
+  const fails = found.filter((f) => f.level === 'fail');
+  for (const f of [...fails, ...found.filter((f) => f.level !== 'fail')]) console.log(`${f.level === 'fail' ? 'FIX ' : 'look'}  ${f.fmt.padEnd(9)} ${f.at ? f.at.padEnd(22) : ''.padEnd(22)} ${f.msg}`);
+  if (found.length) console.log(`${fails.length} to fix, ${found.length - fails.length} to look at`);
+  else console.log('check: nothing found');
+  return fails.length > 0;
 }
 
 // subtitle files beside a cut: <base>.srt and <base>.vtt, timed to the voice

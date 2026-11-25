@@ -22,7 +22,7 @@ export const Captions: React.FC<{captions: C}> = ({captions}) => {
   const fade = interpolate(frame, [line.to - 3, line.to], [1, 0], {extrapolateLeft: 'clamp'});
   const bg = mix(b.dark, '#000000', 0.4);
   return (
-    <AbsoluteFill style={{pointerEvents: 'none'}}>
+    <AbsoluteFill data-captions style={{pointerEvents: 'none'}}>
       <div style={{position: 'absolute', left: 0, right: 0, bottom, display: 'flex', justifyContent: 'center', padding: `0 ${width * (vertical ? 0.18 : 0.1)}px`}}>
         <div style={{...font(b.display), fontSize: size, lineHeight: 1.25, textAlign: 'center', color: b.paper, background: `${bg}d9`, borderRadius: 14 * u, padding: `${0.22 * size}px ${0.5 * size}px`, opacity: Math.min(p * 2, 1) * fade, transform: `translateY(${(1 - p) * 10 * u}px) scale(${0.96 + 0.04 * p})`}}>
           {line.words.map((w, i) => {

@@ -90,8 +90,10 @@ Just ask:
 - "A 20-second vertical for the new export feature."
 - "A GIF for the README."
 
-Before the full render, Claude checks a contact sheet with one still per scene and fixes the story
-until nothing is cut off or crowded, so the slow part only runs once.
+Before the full render, Claude checks a contact sheet with one still per scene, and `render.mjs check` measures
+every line of text in every cut: its size, its contrast (WCAG), whether it's on the frame or under a vertical app's
+buttons, and whether the scene holds long enough to read it. Claude fixes the story until nothing is left to fix, so
+the slow part only runs once. After the render, each MP4 is checked for broken, missing or black frames.
 
 ## Scenes
 

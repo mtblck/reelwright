@@ -90,7 +90,7 @@ const PosterBack: React.FC<{index: number; bg: string; brand: Brand}> = ({index,
   return (
     <AbsoluteFill style={{overflow: 'hidden'}}>
       <div style={{position: 'absolute', left: 0, right: 0, [index % 2 ? 'bottom' : 'top']: 0, height: h, background: slab}} />
-      <div style={{position: 'absolute', right: -40 * u, bottom: -170 * u, fontFamily: `"${brand.display.family}", sans-serif`, fontWeight: 900, fontSize: 620 * u, lineHeight: 1, letterSpacing: -30 * u, color: 'transparent', WebkitTextStroke: `${3 * u}px ${faint(bg, brand, 0.22)}`}}>{String(index + 1).padStart(2, '0')}</div>
+      <div data-check-skip style={{position: 'absolute', right: -40 * u, bottom: -170 * u, fontFamily: `"${brand.display.family}", sans-serif`, fontWeight: 900, fontSize: 620 * u, lineHeight: 1, letterSpacing: -30 * u, color: 'transparent', WebkitTextStroke: `${3 * u}px ${faint(bg, brand, 0.22)}`}}>{String(index + 1).padStart(2, '0')}</div>
     </AbsoluteFill>
   );
 };

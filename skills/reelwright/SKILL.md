@@ -18,7 +18,7 @@ A short video built from what the project really is: its own screens, its own br
 | `scripts/term.mjs` | `node <skill>/scripts/term.mjs <run>/media/term.json [--cwd <dir>] [--show "cmd as typed"] -- <cmd> <args...>`: runs a command and records its real output (colours stripped, 40 lines at most) for a `terminal` scene's `transcript`. |
 | `scripts/build.mjs` | `node <skill>/scripts/build.mjs <run>`: reads `<run>/story.json`, voices each phrase, lays out the timeline, writes the voice track, fonts, sound effects and music into `<run>/public/` and `<run>/props.json`. Prints the timeline. |
 | `scripts/brand.mjs` | `node <skill>/scripts/brand.mjs <url> <run>`: the brand from a live site when there's no brand kit; writes `<run>/site-brand.json` and a swatch to check. |
-| `scripts/render.mjs` | `node <skill>/scripts/render.mjs <run> stills [--format square]` for a contact sheet; `node <skill>/scripts/render.mjs <run> [--formats square,vertical,portrait,landscape]` for the videos, GIF and poster; `stills --format vertical --safe tiktok` (or `reels`, `shorts`) shades where the app's buttons cover; `loop` for a silent seamless loop; `--length 6` renders a short cut. |
+| `scripts/render.mjs` | `node <skill>/scripts/render.mjs <run> stills [--format square]` for a contact sheet; `check [--formats square,vertical]` measures text size, contrast, safe zones and reading time, and checks the MP4s already rendered; `node <skill>/scripts/render.mjs <run> [--formats square,vertical,portrait,landscape]` for the videos, GIF and poster; `stills --format vertical --safe tiktok` (or `reels`, `shorts`) shades where the app's buttons cover; `loop` for a silent seamless loop; `--length 6` renders a short cut. |
 | `scripts/music.mjs` | Writes the music bed (called by `build.mjs`). Moods `bright`, `calm`, `tech`. |
 | `references/story.md` | The `story.json` schema, every scene type and its props, and the story templates. Read it before writing a story. |
 | `examples/inlay/` | A finished story for Inlay (an image tracer) with its brand and screen clip. Copy it to start. |
@@ -69,7 +69,23 @@ The first run in a session installs into `~/.cache/reelwright` (under a minute).
 node <skill>/scripts/render.mjs <run> stills --format vertical
 ```
 
-Read `<run>/stills/sheet.png` (one frame per scene, after its last reveal). Check: no text cut off or crowding the edges, starred words make sense, screens show the right thing, colours readable. Fix the story and rebuild until it's right, then:
+Read `<run>/stills/sheet.png` (one frame per scene, after its last reveal). Check: no text cut off or crowding the edges, starred words make sense, screens show the right thing, colours readable. Then let the script measure it, for the cuts you'll render:
+
+```bash
+node <skill>/scripts/render.mjs <run> check --formats square,vertical,landscape
+```
+
+It lists each problem with its cut and scene, and exits 1 while any line starts `FIX`:
+
+```
+FIX   vertical  scene 5 (diagram)      "story, voice, music" is 28 px; the vertical cut needs 30 or more
+FIX   square    scene 4 (kinetic)      "Synced." has contrast 2.7:1 against its background; it needs 3:1 at this size
+look  vertical  scene 5 (reframe)      "cuts." sits where tiktok, reels, shorts put their buttons or caption
+look  all       scene 3 (compare)      31 words on screen for 5.1 s; give it about 8.8 s ("hold": 3.7) or fewer words
+2 to fix, 2 to look at
+```
+
+`FIX`: text under the cut's smallest size (30 px vertical, 26 square and portrait, 22 landscape, at 1080 on the short side), under WCAG contrast (4.5:1, or 3:1 from 40 px up; faded and dimmed words are left out), or off the frame. `look`: words where a vertical app's buttons sit, or a scene too short to read (a second plus 4 words a second from its first reveal). Fix with shorter words, another `bg`, `hold`, or a different scene, rebuild, and check again until nothing is left to fix. Then:
 
 ```bash
 node <skill>/scripts/render.mjs <run> --formats square,vertical,landscape
@@ -77,7 +93,7 @@ node <skill>/scripts/render.mjs <run> --formats square,vertical,landscape
 
 Square and vertical are the social cuts and come first; landscape is for the web. Add `portrait` (1080 × 1350, 4:5) for Instagram and LinkedIn feeds, where it fills more of the screen than square; it lays out like square, with room to spare. Each takes 40 to 60 seconds. Read the `qa-<format>.png` sheets (a frame a second).
 
-**Gate:** every MP4 exists at -14 LUFS, the QA sheets show every scene with nothing cut off, and `<name>.gif` is under 5 MB (else render the GIF from a shorter story or drop it).
+**Gate:** `check` found nothing to fix; every MP4 exists at -14 LUFS (the render checks each one decodes, has every frame and no black frames, and exits 1 if not); the QA sheets show every scene with nothing cut off; and `<name>.gif` is under 5 MB (else render the GIF from a shorter story or drop it).
 
 **Optional extras.** A 6 s bumper or 15 s ad: `build.mjs <run> --length 6` then `render.mjs <run> --length 6` (see Short cuts in the story reference). A loop for a README or landing page: `render.mjs <run> loop [--format landscape] [--seconds 5] [--scene n]` makes `<name>-loop.mp4`, `.webm` and `.gif` (under 5 MB), silent, from inside one scene (the longest middle one by default) with the end faded into the start so it never jumps. Before posting a vertical cut, `stills --format vertical --safe tiktok` shades where TikTok's buttons and caption sit (`reels`, `shorts` for the others): keep words out of the shading.
 

@@ -21,6 +21,11 @@ version with the date and bumps `plugin.json` to match.
 - A `chart` scene: bars or a line that grow one group per phrase, each value counting up, the highlighted bar or
   point in the accent, with an optional `source` line. In the `terminal` look the bars print as block characters
   ([#69](https://github.com/mtblck/reelwright/pull/69)).
+- `render.mjs <run> check`: lists text that's too small for its cut, under WCAG contrast or off the frame, words
+  where TikTok, Reels or Shorts put their buttons, and scenes too short to read, each with its cut and scene. It
+  also checks the MP4s already rendered for broken, missing or black frames and one-frame flashes. A full render
+  now runs the same video checks, and both exit 1 when something must be fixed
+  ([#70](https://github.com/mtblck/reelwright/pull/70)).
 - Named targets: a `box` step in capture.mjs records where an element sits on a screenshot, and `cursor` and
   `zoom-pan` `focus` can name it (`"cursor": ["Export button"]`) instead of giving coordinates
   ([#67](https://github.com/mtblck/reelwright/pull/67)).
@@ -30,8 +35,15 @@ version with the date and bumps `plugin.json` to match.
 - `brand.logo` and `logoDark`: a wide logo on `title` and `end` in place of the mark and name
   ([#65](https://github.com/mtblck/reelwright/pull/65)).
 
+### Changed
+
+- A scene's accent is lightened or darkened just enough to reach 3:1 against that scene's background, so starred
+  words and highlights stay readable on the brand colour ([#70](https://github.com/mtblck/reelwright/pull/70)).
+
 ### Fixed
 
+- In the vertical cut, the `reframe` label and caption sit above TikTok's, Reels' and Shorts' caption area, and
+  `diagram`'s small lines are larger and darker ([#70](https://github.com/mtblck/reelwright/pull/70)).
 - In square and portrait cuts, a `reframe` scene's label and caption sat under the burned-in captions; they now sit
   above them ([#68](https://github.com/mtblck/reelwright/pull/68)).
 

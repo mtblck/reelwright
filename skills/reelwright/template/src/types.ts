@@ -39,6 +39,7 @@ export type Sfx = {src: string; at: number; volume?: number};
 export type Props = {
   brand: Brand;
   look?: string; // a key of LOOKS in looks.tsx; clean when absent
+  check?: boolean; // set by render.mjs check: the frame reports its text (check.tsx)
   quiet?: boolean; // set by render.mjs for the GIF: the look's Wrap and Over are left out
   scenes: Scene[];
   voice: string | null;
