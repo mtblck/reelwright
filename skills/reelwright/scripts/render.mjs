@@ -4,7 +4,7 @@
 //     --safe shades where that app's buttons and text cover a vertical video (approximate, 1080 x 1920)
 //   node render.mjs <run_dir> loop [--format landscape] [--seconds 5] [--scene n | --from <s>]   a silent seamless loop
 //     -> <name>-loop.mp4, .webm and .gif (under 5 MB), for a README or landing page
-//   node render.mjs <run_dir> [--formats square,vertical,landscape] [--no-gif] [--length 6|15]
+//   node render.mjs <run_dir> [--formats square,vertical,portrait,landscape] [--no-gif] [--length 6|15]
 // --length renders a short cut that build.mjs --length made: <name>-<n>s-<format>.mp4.
 // Writes <run>/<name>-<format>.mp4 at -14 LUFS, <name>-poster.png and <name>.gif (from the first format),
 // <name>-<format>.srt and .vtt (subtitles), <name>-chapters.txt with the landscape cut,
@@ -21,7 +21,7 @@ const length = args.includes('--length') ? Number(args[args.indexOf('--length') 
 const suffix = length ? `-${length}s` : '';
 const propsFile = path.join(run, `props${suffix}.json`);
 if (!args[0] || !fs.existsSync(propsFile)) {
-  console.error('usage: node render.mjs <run_dir> [stills|loop] [--formats square,vertical,landscape] [--no-gif]   (run build.mjs first, with the same --length)');
+  console.error('usage: node render.mjs <run_dir> [stills|loop] [--formats square,vertical,portrait,landscape] [--no-gif]   (run build.mjs first, with the same --length)');
   process.exit(1);
 }
 const opt = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d);
@@ -126,6 +126,8 @@ if (args[1] === 'loop') {
 }
 
 const formats = opt('--formats', 'square,vertical').split(',').map((s) => s.trim()).filter(Boolean);
+const FORMATS = ['square', 'vertical', 'portrait', 'landscape']; // the compositions in template/src/Root.tsx
+for (const f of formats) if (!FORMATS.includes(f)) throw new Error(`no format "${f}": use ${FORMATS.join(', ')}`);
 const outs = [];
 for (const fmt of formats) {
   const raw = path.join(run, `.raw-${fmt}.mp4`);

@@ -133,7 +133,7 @@ export const Statement: React.FC<P> = ({scene, c}) => {
 // props: {image? | video?, frame: 'browser'|'phone', caption*, url?, zoom?: [from, to]}
 export const Screen: React.FC<P> = ({scene, c}) => {
   const b = useBrand();
-  const {u, vertical, landscape} = useLayout();
+  const {u, vertical, landscape, tall} = useLayout();
   const frame = useCurrentFrame();
   const p = usePop(cue(scene), 16);
   const phone = scene.props.frame === 'phone';
@@ -146,8 +146,8 @@ export const Screen: React.FC<P> = ({scene, c}) => {
     <Img src={asset(scene.props.image)} style={{width: '100%', height: '100%', objectFit: 'cover', objectPosition: scene.props.position ?? 'top', transform: `scale(${zoom})`, transformOrigin: 'top center'}} />
   );
   const bw = landscape ? 1080 * u : vertical ? 960 * u : 900 * u;
-  const bh = landscape ? 680 * u : vertical ? 1000 * u : 600 * u;
-  const pw = (vertical ? 640 : landscape ? 410 : 380) * u;
+  const bh = landscape ? 680 * u : vertical ? 1000 * u : (600 + tall * 0.6) * u;
+  const pw = (vertical ? 640 : landscape ? 410 : 380 + tall * 0.4) * u;
   // a cursor over the picture: its box is the device's screen, and the picture fills it as object-fit: cover does
   const [iw, ih] = scene.props.mediaSize ?? [1, 1];
   const [sw, sh] = phone ? [pw - 32 * u, pw * 2.16 - 32 * u] : [bw - 4 * u, bh - 60 * u];
@@ -375,7 +375,7 @@ export const Kinetic: React.FC<P> = ({scene, c}) => {
 const ratio = (a: any) => (typeof a === 'number' ? a : (([w, h]) => w / h)(String(a).split(':').map(Number)));
 export const Reframe: React.FC<P> = ({scene, c}) => {
   const b = useBrand();
-  const {u, width, height, vertical} = useLayout();
+  const {u, width, height, vertical, tall} = useLayout();
   const frame = useCurrentFrame();
   const shapes: any[] = scene.props.shapes ?? [];
   const k = shapes.length;
@@ -383,7 +383,7 @@ export const Reframe: React.FC<P> = ({scene, c}) => {
   let s = 0;
   for (let i = 1; i < k; i++) s += usePop(cue(scene, i), 15) * 1;
   const lo = Math.min(k - 1, Math.floor(s)), hi = Math.min(k - 1, lo + 1), f = s - lo;
-  const area = {w: width * (vertical ? 0.84 : 0.74), h: height * (vertical ? 0.6 : 0.62)};
+  const area = {w: width * (vertical ? 0.84 : 0.74), h: height * (vertical ? 0.6 : 0.52)};
   const fit = (r: number) => { const w = Math.min(area.w, area.h * r); return {w, h: w / r}; };
   const A = fit(ratio(shapes[lo]?.aspect ?? 1)), B = fit(ratio(shapes[hi]?.aspect ?? 1));
   const box = {w: A.w + (B.w - A.w) * f, h: A.h + (B.h - A.h) * f};
@@ -403,7 +403,7 @@ export const Reframe: React.FC<P> = ({scene, c}) => {
   const mediaOp = 1 - Math.min(1, asm * 2);
   const frameW = box.w + (L - box.w) * asm; // the screen frame becomes the mark's wide frame
   return (
-    <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center'}}>
+    <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', paddingBottom: vertical ? 0 : 120 * u}}>
       <div data-match style={{position: 'relative', width: frameW, height: box.h + ((L * 9) / 16 - box.h) * asm, transform: `scale(${0.85 + 0.15 * intro})`, opacity: Math.min(1, intro * 2)}}>
         <div style={{position: 'absolute', inset: 0, borderRadius: (b.radius ?? 20) * u * (1 - asm), overflow: 'hidden', background: c.card, opacity: mediaOp, boxShadow: `0 ${30 * u}px ${90 * u}px #00000055`}}>
           {shapes.map((sh, i) => {
@@ -424,13 +424,13 @@ export const Reframe: React.FC<P> = ({scene, c}) => {
         </AbsoluteFill>
       )}
       {label && (
-        <div style={{position: 'absolute', bottom: (vertical ? 170 : 70) * u, left: 0, right: 0, textAlign: 'center', ...font(b.display), fontSize: ts((vertical ? 96 : 76) * u), letterSpacing: -1.5 * u, color: c.ink, opacity: Math.min(1, lp * 1.5) * mediaOp, transform: `translateY(${(1 - lp) * 30 * u}px)`}}>
+        <div style={{position: 'absolute', bottom: (vertical ? 170 : 200 + tall * 0.3) * u, left: 0, right: 0, textAlign: 'center', ...font(b.display), fontSize: ts((vertical ? 96 : 76) * u), letterSpacing: -1.5 * u, color: c.ink, opacity: Math.min(1, lp * 1.5) * mediaOp, transform: `translateY(${(1 - lp) * 30 * u}px)`}}>
           <Emph text={label} color={b.accent} />
           <span style={{...font(b.text), fontSize: ts((vertical ? 44 : 36) * u), color: b.accent, marginLeft: 22 * u, fontWeight: 700}}>{String(shapes[labelKey]?.aspect ?? '')}</span>
         </div>
       )}
       {scene.props.caption && (
-        <div style={{position: 'absolute', bottom: (vertical ? 170 : 70) * u, left: 0, right: 0, display: 'flex', justifyContent: 'center', opacity: Math.min(1, asm * 1.5)}}>
+        <div style={{position: 'absolute', bottom: (vertical ? 170 : 200 + tall * 0.3) * u, left: 0, right: 0, display: 'flex', justifyContent: 'center', opacity: Math.min(1, asm * 1.5)}}>
           <Words text={scene.props.caption} at={cue(scene, k) + 8} size={(vertical ? 96 : 76) * u} color={c.ink} accent={b.accent} />
         </div>
       )}

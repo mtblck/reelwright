@@ -18,7 +18,7 @@ A short video built from what the project really is: its own screens, its own br
 | `scripts/term.mjs` | `node <skill>/scripts/term.mjs <run>/media/term.json [--cwd <dir>] [--show "cmd as typed"] -- <cmd> <args...>`: runs a command and records its real output (colours stripped, 40 lines at most) for a `terminal` scene's `transcript`. |
 | `scripts/build.mjs` | `node <skill>/scripts/build.mjs <run>`: reads `<run>/story.json`, voices each phrase, lays out the timeline, writes the voice track, fonts, sound effects and music into `<run>/public/` and `<run>/props.json`. Prints the timeline. |
 | `scripts/brand.mjs` | `node <skill>/scripts/brand.mjs <url> <run>`: the brand from a live site when there's no brand kit; writes `<run>/site-brand.json` and a swatch to check. |
-| `scripts/render.mjs` | `node <skill>/scripts/render.mjs <run> stills [--format square]` for a contact sheet; `node <skill>/scripts/render.mjs <run> [--formats square,vertical,landscape]` for the videos, GIF and poster; `stills --format vertical --safe tiktok` (or `reels`, `shorts`) shades where the app's buttons cover; `loop` for a silent seamless loop; `--length 6` renders a short cut. |
+| `scripts/render.mjs` | `node <skill>/scripts/render.mjs <run> stills [--format square]` for a contact sheet; `node <skill>/scripts/render.mjs <run> [--formats square,vertical,portrait,landscape]` for the videos, GIF and poster; `stills --format vertical --safe tiktok` (or `reels`, `shorts`) shades where the app's buttons cover; `loop` for a silent seamless loop; `--length 6` renders a short cut. |
 | `scripts/music.mjs` | Writes the music bed (called by `build.mjs`). Moods `bright`, `calm`, `tech`. |
 | `references/story.md` | The `story.json` schema, every scene type and its props, and the story templates. Read it before writing a story. |
 | `examples/inlay/` | A finished story for Inlay (an image tracer) with its brand and screen clip. Copy it to start. |
@@ -75,7 +75,7 @@ Read `<run>/stills/sheet.png` (one frame per scene, after its last reveal). Chec
 node <skill>/scripts/render.mjs <run> --formats square,vertical,landscape
 ```
 
-Square and vertical are the social cuts and come first; landscape is for the web. Each takes 40 to 60 seconds. Read the `qa-<format>.png` sheets (a frame a second).
+Square and vertical are the social cuts and come first; landscape is for the web. Add `portrait` (1080 × 1350, 4:5) for Instagram and LinkedIn feeds, where it fills more of the screen than square; it lays out like square, with room to spare. Each takes 40 to 60 seconds. Read the `qa-<format>.png` sheets (a frame a second).
 
 **Gate:** every MP4 exists at -14 LUFS, the QA sheets show every scene with nothing cut off, and `<name>.gif` is under 5 MB (else render the GIF from a shorter story or drop it).
 

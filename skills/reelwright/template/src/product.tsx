@@ -71,14 +71,14 @@ export const coverMap = (iw: number, ih: number, w: number, h: number, pos = 'to
 // reveals: 1 the picture rises in, then the camera moves to each focus in turn
 export const ZoomPan: React.FC<P> = ({scene, c}) => {
   const b = useBrand();
-  const {u, width, height, vertical, landscape} = useLayout();
+  const {u, width, height, vertical, landscape, tall} = useLayout();
   const frame = useCurrentFrame();
   const p = usePop(cue(scene), 16);
   const [iw, ih] = scene.props.mediaSize ?? [1600, 1000];
   const caption = scene.props.caption;
   // the viewport: as big as the frame allows under the caption
   const vw = width - 2 * (vertical ? 60 : landscape ? 160 : 70) * u;
-  const vh = (vertical ? (caption ? 1300 : 1500) : landscape ? (caption ? 780 : 900) : caption ? 720 : 860) * u;
+  const vh = (vertical ? (caption ? 1300 : 1500) : landscape ? (caption ? 780 : 900) : (caption ? 720 : 860) + tall * 0.8) * u;
   // a camera is the picture rectangle in view, as centre and width (its height follows the viewport's shape)
   const asp = vh / vw;
   const full = Math.min(iw, ih / asp);

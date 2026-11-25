@@ -15,6 +15,9 @@ version with the date and bumps `plugin.json` to match.
   CSS (adjusted so text stays readable), its fonts (or the closest Google Fonts), its icon as the mark and its header
   logo, with a swatch sheet to check. The build uses it whenever the story has no `brandJson`
   ([#65](https://github.com/mtblck/reelwright/pull/65)).
+- A `portrait` cut, 1080 × 1350 (4:5), for Instagram and LinkedIn feeds: `render.mjs --formats portrait`. It lays
+  out like square with room to spare and has captions on by default; `4:5` also works as a `reframe` shape and a
+  `mask` frame ([#68](https://github.com/mtblck/reelwright/pull/68)).
 - Named targets: a `box` step in capture.mjs records where an element sits on a screenshot, and `cursor` and
   `zoom-pan` `focus` can name it (`"cursor": ["Export button"]`) instead of giving coordinates
   ([#67](https://github.com/mtblck/reelwright/pull/67)).
@@ -23,6 +26,11 @@ version with the date and bumps `plugin.json` to match.
   ([#66](https://github.com/mtblck/reelwright/pull/66)).
 - `brand.logo` and `logoDark`: a wide logo on `title` and `end` in place of the mark and name
   ([#65](https://github.com/mtblck/reelwright/pull/65)).
+
+### Fixed
+
+- In square and portrait cuts, a `reframe` scene's label and caption sat under the burned-in captions; they now sit
+  above them ([#68](https://github.com/mtblck/reelwright/pull/68)).
 
 ## [0.2.0] - 2026-11-24
 

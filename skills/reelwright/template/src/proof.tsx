@@ -29,11 +29,11 @@ const Caption: React.FC<{scene: Scene; c: C; max: number}> = ({scene, c, max}) =
 // reveals: 1 the before rises in; 2 the slider sweeps across to the after
 export const BeforeAfter: React.FC<P> = ({scene, c}) => {
   const b = useBrand();
-  const {u, width, vertical, landscape} = useLayout();
+  const {u, width, vertical, landscape, tall} = useLayout();
   const frame = useCurrentFrame();
   const p = usePop(cue(scene), 16);
   const vw = width - 2 * (vertical ? 60 : landscape ? 200 : 70) * u;
-  const vh = (vertical ? 1300 : landscape ? 760 : 700) * u * (scene.props.caption ? 1 : 1.12);
+  const vh = ((vertical ? 1300 : landscape ? 760 : 700 + tall * 0.8) * u) * (scene.props.caption ? 1 : 1.12);
   const at = scene.cues.length > 1 ? cue(scene, 1) : cue(scene) + 30;
   const end = scene.props.split ? 0.5 : 1;
   const x = interpolate(frame, [at, at + 34], [0, end], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.inOut(Easing.cubic)});
