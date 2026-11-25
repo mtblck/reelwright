@@ -9,6 +9,8 @@ version with the date and bumps `plugin.json` to match.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-25
+
 ### Added
 
 - `brand.mjs` reads the brand from a live site or running app when there's no brand kit: colours by role from its
@@ -173,6 +175,7 @@ The first release ([#1](https://github.com/mtblck/reelwright/pull/1)).
 - In square cuts, a `screen` scene with a phone frame ran past the bottom of the 1080 px frame. The phone now sits
   beside its caption, as it does in landscape ([#3](https://github.com/mtblck/reelwright/pull/3)).
 
-[Unreleased]: https://github.com/mtblck/reelwright/compare/0d4ba92...HEAD
+[Unreleased]: https://github.com/mtblck/reelwright/compare/0505ef5...HEAD
+[0.3.0]: https://github.com/mtblck/reelwright/compare/0d4ba92...0505ef5
 [0.2.0]: https://github.com/mtblck/reelwright/compare/5bfc62c...0d4ba92
 [0.1.0]: https://github.com/mtblck/reelwright/commit/5bfc62c
