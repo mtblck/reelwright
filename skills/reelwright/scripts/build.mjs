@@ -50,10 +50,17 @@ if (!LOOKS[look]) throw new Error(`look "${look}" is not one of ${Object.keys(LO
 const pub = path.join(run, 'public');
 fs.mkdirSync(pub, {recursive: true});
 
-// --- brand: from a brand-kit brand.json when there is one, overridden by story.brand ---
+// --- brand: from a brand-kit brand.json when there is one, else from the live site (brand.mjs writes
+// <run>/site-brand.json), overridden by story.brand ---
 function loadBrand() {
   let b = {};
   let dir = run;
+  const site = path.join(run, 'site-brand.json');
+  if (!story.brandJson && fs.existsSync(site)) {
+    const {source, notes, ...k} = JSON.parse(fs.readFileSync(site, 'utf8'));
+    for (const f of ['mark', 'markDark', 'logo', 'logoDark']) if (k[f]) k[f] = copy(path.resolve(run, k[f]), 'brand');
+    b = k;
+  }
   if (story.brandJson) {
     const file = path.resolve(run, story.brandJson);
     dir = path.dirname(file);
@@ -70,9 +77,9 @@ function loadBrand() {
     };
   }
   const o = story.brand ?? {};
-  for (const f of ['mark', 'markDark']) if (o[f]) o[f] = copy(path.resolve(run, o[f]), 'brand');
+  for (const f of ['mark', 'markDark', 'logo', 'logoDark']) if (o[f]) o[f] = copy(path.resolve(run, o[f]), 'brand');
   b = {...b, ...o, display: {...b.display, ...o.display}, text: {...b.text, ...o.text}};
-  for (const f of ['name', 'paper', 'ink', 'primary', 'accent', 'dark']) if (!b[f]) throw new Error(`brand.${f} is missing: set story.brandJson or story.brand.${f}`);
+  for (const f of ['name', 'paper', 'ink', 'primary', 'accent', 'dark']) if (!b[f]) throw new Error(`brand.${f} is missing: set story.brandJson, run brand.mjs on the site, or set story.brand.${f}`);
   if (!b.display?.family) b.display = {family: 'Inter', weight: 800};
   if (!b.text?.family) b.text = {family: 'Inter', weight: 400};
   return b;

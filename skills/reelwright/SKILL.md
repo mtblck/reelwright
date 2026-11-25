@@ -17,6 +17,7 @@ A short video built from what the project really is: its own screens, its own br
 | `scripts/capture.mjs` | `node <skill>/scripts/capture.mjs <url> <run>/media [--device phone\|desktop] [--steps steps.json] [--clip]`: screenshots and a screen clip of the running app, driven by a list of steps. |
 | `scripts/term.mjs` | `node <skill>/scripts/term.mjs <run>/media/term.json [--cwd <dir>] [--show "cmd as typed"] -- <cmd> <args...>`: runs a command and records its real output (colours stripped, 40 lines at most) for a `terminal` scene's `transcript`. |
 | `scripts/build.mjs` | `node <skill>/scripts/build.mjs <run>`: reads `<run>/story.json`, voices each phrase, lays out the timeline, writes the voice track, fonts, sound effects and music into `<run>/public/` and `<run>/props.json`. Prints the timeline. |
+| `scripts/brand.mjs` | `node <skill>/scripts/brand.mjs <url> <run>`: the brand from a live site when there's no brand kit; writes `<run>/site-brand.json` and a swatch to check. |
 | `scripts/render.mjs` | `node <skill>/scripts/render.mjs <run> stills [--format square]` for a contact sheet; `node <skill>/scripts/render.mjs <run> [--formats square,vertical,landscape]` for the videos, GIF and poster; `stills --format vertical --safe tiktok` (or `reels`, `shorts`) shades where the app's buttons cover; `loop` for a silent seamless loop; `--length 6` renders a short cut. |
 | `scripts/music.mjs` | Writes the music bed (called by `build.mjs`). Moods `bright`, `calm`, `tech`. |
 | `references/story.md` | The `story.json` schema, every scene type and its props, and the story templates. Read it before writing a story. |
@@ -26,7 +27,13 @@ A short video built from what the project really is: its own screens, its own br
 
 ### 1. Gather
 
-From the repo: the README (what it is, who it's for, the one-line pitch), the site or app's own copy, real numbers (speed, size, counts, ratings) and the brand. A brand-kit `brand.json` (often `brand/brand.json`) gives colours, fonts and marks in one go: point `story.brandJson` at it. Without one, set `story.brand` by hand from the site's CSS (see `references/story.md`).
+From the repo: the README (what it is, who it's for, the one-line pitch), the site or app's own copy, real numbers (speed, size, counts, ratings) and the brand. A brand-kit `brand.json` (often `brand/brand.json`) gives colours, fonts and marks in one go: point `story.brandJson` at it. Most projects have none; then read the brand from the live site or the running app:
+
+```bash
+node <skill>/scripts/brand.mjs https://example.com <run>
+```
+
+It writes `<run>/site-brand.json`, which the build uses whenever the story has no `brandJson`: paper, ink, primary, accent and dark picked from the CSS by where they're used (and darkened where text wouldn't read on them), the heading and body faces (mapped to the closest Google Font when they aren't one), the favicon or app icon as the mark, and a wide header logo for title and end. Open `<run>/site-brand/swatch.png` and read the notes it prints: fix anything wrong with `story.brand`, which wins over both.
 
 Real screens beat everything else. Build and start the project the way its README says, then capture it:
 

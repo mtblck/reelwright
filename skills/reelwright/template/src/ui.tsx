@@ -18,10 +18,10 @@ export const useLayout = () => {
 
 export const sceneColors = (b: Brand, bg: Scene['bg']) =>
   bg === 'dark'
-    ? {bg: b.dark, ink: b.paper, quiet: mix(b.paper, b.dark, 0.35), card: mix(b.paper, b.dark, 0.9), mark: b.markDark || b.mark}
+    ? {bg: b.dark, ink: b.paper, quiet: mix(b.paper, b.dark, 0.35), card: mix(b.paper, b.dark, 0.9), mark: b.markDark || b.mark, logo: b.logoDark}
     : bg === 'brand'
-      ? {bg: b.primary, ink: b.paper, quiet: mix(b.paper, b.primary, 0.3), card: mix(b.paper, b.primary, 0.88), mark: b.markDark || b.mark}
-      : {bg: b.paper, ink: b.ink, quiet: mix(b.ink, b.paper, 0.4), card: mix(b.ink, b.paper, 0.94), mark: b.mark};
+      ? {bg: b.primary, ink: b.paper, quiet: mix(b.paper, b.primary, 0.3), card: mix(b.paper, b.primary, 0.88), mark: b.markDark || b.mark, logo: b.logoDark}
+      : {bg: b.paper, ink: b.ink, quiet: mix(b.ink, b.paper, 0.4), card: mix(b.ink, b.paper, 0.94), mark: b.mark, logo: b.logo};
 
 // a + (b - a) * t, on hex colours
 export function mix(a: string, b: string, t: number) {

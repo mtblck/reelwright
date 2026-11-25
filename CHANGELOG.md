@@ -9,6 +9,15 @@ version with the date and bumps `plugin.json` to match.
 
 ## [Unreleased]
 
+### Added
+
+- `brand.mjs` reads the brand from a live site or running app when there's no brand kit: colours by role from its
+  CSS (adjusted so text stays readable), its fonts (or the closest Google Fonts), its icon as the mark and its header
+  logo, with a swatch sheet to check. The build uses it whenever the story has no `brandJson`
+  ([#65](https://github.com/mtblck/reelwright/pull/65)).
+- `brand.logo` and `logoDark`: a wide logo on `title` and `end` in place of the mark and name
+  ([#65](https://github.com/mtblck/reelwright/pull/65)).
+
 ## [0.2.0] - 2026-11-24
 
 ### Added

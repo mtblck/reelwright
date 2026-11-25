@@ -81,7 +81,14 @@ const Mark: React.FC<{src?: string; size: number; at?: number}> = ({src, size, a
   return <Img data-match src={asset(src)} style={{width: size, height: size, transform: `scale(${p}) rotate(${(1 - p) * -8}deg)`}} />;
 };
 
-// title: mark pops, name, tagline.  props: {name?, tagline?}
+// a wide logo (brand.logo / logoDark) in place of mark and name, on title and end
+const Logo: React.FC<{src: string; height: number; at: number; alt: string}> = ({src, height, at, alt}) => {
+  const p = usePop(at, 11);
+  const {width} = useLayout();
+  return <Img data-match src={asset(src)} alt={alt} style={{height, maxWidth: width * 0.78, objectFit: 'contain', transform: `scale(${0.85 + 0.15 * p})`, opacity: Math.min(1, p * 1.6)}} />;
+};
+
+// title: mark pops, name, tagline (or the wide logo in place of mark and name).  props: {name?, tagline?}
 export const Title: React.FC<P> = ({scene, c}) => {
   const b = useBrand();
   const {u, vertical} = useLayout();
@@ -90,10 +97,16 @@ export const Title: React.FC<P> = ({scene, c}) => {
   const tag = usePop(cue(scene, 1) + 2);
   return (
     <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', gap: 40 * u, padding: 90 * u}}>
-      <Mark src={c.mark} size={(vertical ? 300 : 240) * u} at={2} />
-      <div style={{...font(b.display), ...rise(name, u), fontSize: ts(128 * k * u), letterSpacing: -2.5 * u, color: c.ink, lineHeight: 1}}>
-        <Emph text={scene.props.name ?? b.name} color={b.accent} />
-      </div>
+      {c.logo && !scene.props.name ? (
+        <Logo src={c.logo} height={(vertical ? 200 : 170) * u} at={2} alt={b.name} />
+      ) : (
+        <>
+          <Mark src={c.mark} size={(vertical ? 300 : 240) * u} at={2} />
+          <div style={{...font(b.display), ...rise(name, u), fontSize: ts(128 * k * u), letterSpacing: -2.5 * u, color: c.ink, lineHeight: 1}}>
+            <Emph text={scene.props.name ?? b.name} color={b.accent} />
+          </div>
+        </>
+      )}
       {(scene.props.tagline ?? b.tagline) && (
         <div style={{...font(b.text), ...rise(tag, u, 24), fontSize: ts(46 * k * u), color: c.quiet, textAlign: 'center', maxWidth: 760 * u, lineHeight: 1.25, textWrap: 'balance' as any}}>
           <Emph text={scene.props.tagline ?? b.tagline!} color={b.accent} />
@@ -264,7 +277,7 @@ const Step: React.FC<{n: number; text: string; at: number; c: C}> = ({n, text, a
   );
 };
 
-// end: mark, name, a button that gets pressed, the URL.  props: {button*, url?, stinger? (one line after the card, a beat later)}
+// end: mark and name (or the wide logo), a button that gets pressed, the URL.  props: {button*, url?, stinger? (one line after the card, a beat later)}
 export const End: React.FC<P> = ({scene, c}) => {
   const b = useBrand();
   const {u, vertical} = useLayout();
@@ -289,8 +302,14 @@ export const End: React.FC<P> = ({scene, c}) => {
   }
   return (
     <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', gap: 44 * u, padding: 90 * u}}>
-      <Mark src={c.mark} size={200 * k * u} at={cue(scene, 0)} />
-      <div style={{...font(b.display), ...rise(n, u), fontSize: ts(104 * k * u), color: c.ink, letterSpacing: -2 * u, lineHeight: 1}}>{b.name}</div>
+      {c.logo ? (
+        <Logo src={c.logo} height={140 * k * u} at={cue(scene, 0)} alt={b.name} />
+      ) : (
+        <>
+          <Mark src={c.mark} size={200 * k * u} at={cue(scene, 0)} />
+          <div style={{...font(b.display), ...rise(n, u), fontSize: ts(104 * k * u), color: c.ink, letterSpacing: -2 * u, lineHeight: 1}}>{b.name}</div>
+        </>
+      )}
       <div style={{...font(b.text), transform: `scale(${btn * down})`, background: fill, color: fg, fontSize: ts(46 * k * u), fontWeight: 700, padding: `${26 * k * u}px ${56 * k * u}px`, borderRadius: 999}}>{scene.props.button}</div>
       {(scene.props.url ?? b.url) && <div style={{...font(b.text), opacity: url, fontSize: ts(40 * k * u), color: c.quiet}}>{scene.props.url ?? b.url}</div>}
     </AbsoluteFill>
