@@ -91,6 +91,7 @@ Just ask:
 - "Make a launch video for this app."
 - "A 20-second vertical for the new export feature."
 - "A GIF for the README."
+- "Something with the pace of this one: launch.mp4." (it measures the reference's cuts and tone and says what it'll borrow first)
 
 Before the full render, Claude checks a contact sheet with one still per scene, and `render.mjs check` measures
 every line of text in every cut: its size, its contrast (WCAG), whether it's on the frame or under a vertical app's
