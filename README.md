@@ -65,6 +65,7 @@ Every scene is laid out for each shape, not cropped from one, so the same story 
 | `<name>-appstore.mp4`, `-appstore-ipad.mp4` | 886 × 1920, 1200 × 1600 | App Store app previews, 15 to 30 s (with `--formats appstore,appstore-ipad`) |
 | `<name>.gif` | 540 wide | READMEs and docs (made from the first format in `--formats`) |
 | `<name>-<format>.srt`, `.vtt` | Text | Subtitles to upload with each cut |
+| `<name>-overlay-<format>.mov`, `.webm` | Any cut | Transparent, to drop a title or end card into another edit (`render.mjs <run> overlay`) |
 | `<name>-poster.png` | Size of the first format | Video player poster and thumbnails |
 
 Every video is mixed to -14 LUFS, the loudness the social platforms play at.
