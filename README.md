@@ -101,13 +101,13 @@ brand and a way in: `cut`, `slide`, `fade`, `zoom`, `splice`, `push`, `mask`, `w
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset=".github/readme/scenes-dark.webp" />
-    <img src=".github/readme/scenes-light.webp" alt="Eighteen stills, one for each move: statement, title, steps, screen, features, kinetic, reframe, the splice transition, end, terminal, code, stat, zoom-pan (a screenshot up close with a cursor on a button), before-after (a light and dark page), quote, compare (by hand against with Reelwright), logo-wall and diagram (repo, Reelwright, three cuts)" width="880" />
+    <img src=".github/readme/scenes-light.webp" alt="Nineteen stills, one for each move: statement, title, steps, screen, features, kinetic, reframe, the splice transition, end, terminal, code, stat, zoom-pan (a screenshot up close with a cursor on a button), before-after (a light and dark page), quote, compare (by hand against with Reelwright), logo-wall, diagram (repo, Reelwright, three cuts) and chart (scene types per release from the changelog, the newest in orange)" width="880" />
   </picture>
 </p>
 
 `terminal` and `code` are for projects with no app to film: a real command's output, recorded by
 `scripts/term.mjs`, and lines from a file in the repo. `zoom-pan` walks a camera over one screenshot, and a cursor
-can click through it. The proof scenes (`quote`, `compare`, `before-after`, `logo-wall`) only take real material. Every scene, its props and the
+can click through it. The proof scenes (`quote`, `compare`, `before-after`, `logo-wall`, `chart`) only take real material. Every scene, its props and the
 story templates (App launch, Feature demo, Tool explainer, Dev tool and Hype) are in
 [`references/story.md`](skills/reelwright/references/story.md).
 

@@ -2,7 +2,7 @@ import React from 'react';
 import {AbsoluteFill, Img, OffthreadVideo, interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
 import {CursorLayer, coverMap} from './product';
 import type {Scene} from './types';
-import {Emph, Scribble, asset, font, mix, rise, sceneColors, ts, useBrand, useFade, useLayout, usePop} from './ui';
+import {Emph, Scribble, asset, countUp, font, mix, rise, sceneColors, ts, useBrand, useFade, useLayout, usePop} from './ui';
 import {useLook, useTilt} from './looks';
 
 type C = ReturnType<typeof sceneColors>;
@@ -225,11 +225,8 @@ export const Stat: React.FC<P> = ({scene, c}) => {
   const k = vertical ? 1.2 : 1;
   const frame = useCurrentFrame();
   const raw: string = String(scene.props.value);
-  const n = parseFloat(raw.replace(/[^0-9.]/g, ''));
   const t = interpolate(frame, [cue(scene), cue(scene) + 26], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
-  const dec = (raw.match(/[0-9]\.([0-9]+)/)?.[1] ?? '').length;
-  const now = n * (1 - Math.pow(1 - t, 3));
-  const shown = isFinite(n) && n > 0 ? raw.replace(/[0-9][0-9,.]*/, now.toLocaleString('en-US', {minimumFractionDigits: dec, maximumFractionDigits: dec})) : raw;
+  const shown = countUp(raw, 1 - Math.pow(1 - t, 3));
   const l = usePop(cue(scene, 1));
   const look = useLook();
   if (look.text === 'type')

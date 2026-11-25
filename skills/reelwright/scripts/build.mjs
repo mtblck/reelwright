@@ -19,7 +19,7 @@ const TAIL = 1.4; // extra hold on the last scene
 const WAYS = ['cut', 'slide', 'fade', 'zoom', 'splice', 'push', 'mask', 'whip', 'glitch', 'match']; // the keys of TRANSITIONS in template/src/transitions.tsx
 // names and default ways in of LOOKS in template/src/looks.tsx; `mono` swaps the brand's fonts for a mono face, set smaller (it runs wider)
 const LOOKS = {clean: {enter: 'slide'}, film: {enter: 'splice'}, terminal: {enter: 'cut', mono: {family: 'JetBrains Mono', display: 800, text: 400, scale: 0.72}}, poster: {enter: 'cut', scale: 1.12}, blueprint: {enter: 'fade'}, paper: {enter: 'slide'}, sketch: {enter: 'fade'}, isometric: {enter: 'zoom'}};
-const MIN = {title: 2.2, statement: 2, screen: 3, features: 3, stat: 2.4, steps: 3, end: 2.6, kinetic: 1.2, reframe: 3, terminal: 3.5, code: 3.5, 'zoom-pan': 3.5, 'before-after': 3.5, quote: 3, compare: 3, 'logo-wall': 2.6, diagram: 3};
+const MIN = {title: 2.2, statement: 2, screen: 3, features: 3, stat: 2.4, steps: 3, end: 2.6, kinetic: 1.2, reframe: 3, terminal: 3.5, code: 3.5, 'zoom-pan': 3.5, 'before-after': 3.5, quote: 3, compare: 3, 'logo-wall': 2.6, diagram: 3, chart: 3};
 
 const SKILL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const run = path.resolve(process.argv[2] ?? '');
@@ -207,6 +207,11 @@ const total = scenes.at(-1).start + scenes.at(-1).dur;
 // terminal: a transcript recorded by term.mjs; code: lines read from a file in the repo
 for (const s of scenes) {
   if (s.type === 'terminal' && s.props.transcript) Object.assign(s.props, JSON.parse(fs.readFileSync(path.resolve(run, s.props.transcript), 'utf8')), {...s.props, transcript: undefined});
+  if (s.type === 'chart') {
+    const d = s.props.data;
+    if (!Array.isArray(d) || d.length < 2 || d.length > 8) throw new Error(`chart scene: data needs 2 to 8 {"label", "value"} points (has ${Array.isArray(d) ? d.length : 'none'})`);
+    for (const p of d) if (typeof p.value === 'number' ? p.value < 0 : /(^|[^0-9])[-−]\s*[0-9.]/.test(String(p.value)) || !/[0-9]/.test(String(p.value))) throw new Error(`chart scene: "${p.label}" has value ${JSON.stringify(p.value)}; values are numbers of zero or more (bars start from zero), e.g. 12 or "1.3 s"`);
+  }
   if (s.type === 'code' && s.props.file) {
     const all = fs.readFileSync(path.resolve(run, s.props.file), 'utf8').split('\n');
     const [a, z] = s.props.lines ?? [1, all.length];
@@ -263,6 +268,7 @@ for (const s of scenes) {
   if (s.type === 'features') s.cues.slice(1).forEach((c) => add('tick', s.start + c, 0.45));
   if (s.type === 'steps') s.cues.slice(s.props.title ? 1 : 0).forEach((c) => add('tick', s.start + c, 0.45));
   if (s.type === 'stat') add('rise', s.start + s.cues[0], 0.4);
+  if (s.type === 'chart') s.cues.slice(0, Math.min(8, (s.props.data ?? []).length)).forEach((c) => add('tick', s.start + c, 0.15));
   // a cursor clicks each target 20 frames after its phrase starts (CLICK_AT in product.tsx)
   (s.props.cursor ?? []).forEach((pt, k) => { if (pt && k < s.cues.length) add('click', s.start + s.cues[k] + 20, 0.5); });
   // a sub drop under the title, a riser into a reframe (ending on its cut), a hit on a stinger

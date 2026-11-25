@@ -53,11 +53,20 @@ Each phrase in `say` starts the next reveal. Give a scene as many phrases as it 
 | `compare` | `rows`* (2 to 4 `[old, new]` pairs), `title`, `headers` (default `["Before", "With <name>"]`) | 1: the title, headers and first row; then one row per phrase |
 | `logo-wall` | `logos`* (4 to 12 `{"image", "name"}`; without an image the name shows), `title` | the logos come in one group per phrase |
 | `diagram` | `nodes`* (2 to 4: `"label"` or `{"label", "sub"}`; what goes in, the tool, what comes out), `focus` (the node in the accent, default the middle one), `caption` | 1: the first node; then each phrase draws an arrow and the next node |
+| `chart` | `data`* (2 to 8 `{"label", "value"}`; a value is a number or text with one in it: `1.3`, `"1.3 s"`, `"12,000+"`), `kind` (`bar`, default, or `line`), `title`, `highlight` (the index in the accent, default the largest), `source` (where the numbers are from, shown small under the chart). Values must be zero or more | 1: the title and the first group; the bars or points come in one group per phrase, as even as they can be, each value counting up. Bars start from zero, so the heights are honest |
 | `end` | `button`*, `url` (default brand url), `stinger` (one short line after the card: a cut to dark, a beat of silence, then the line slams in with a hit; adds 1.7 s, and the music ends before it) | 1: mark, name and button; 2: the button is pressed and the URL appears |
 
 Screen captures: a phone clip from `capture.mjs --device phone --clip` fits the `phone` frame; a desktop screenshot fits `browser`. Videos play muted.
 
-**Proof is real.** A `quote` is someone's actual words, copied exactly, with where they said it (an issue, a review, a post); a `stat` or `compare` row is a number or fact you can point to in the repo, its README or `gh api` (stars, downloads, benchmark output). If there's nothing real to quote, leave the scene out; never write a testimonial.
+**Proof is real.** A `quote` is someone's actual words, copied exactly, with where they said it (an issue, a review, a post); a `stat`, `chart` or `compare` row is a number or fact you can point to in the repo, its README or `gh api` (stars, downloads, benchmark output). If there's nothing real to quote, leave the scene out; never write a testimonial.
+
+A `chart` of real numbers, one bar per phrase (here, from the plugin's own changelog):
+
+```json
+{"type": "chart", "bg": "paper", "title": "Scene types, *release by release*", "source": "From CHANGELOG.md",
+ "data": [{"label": "0.1.0", "value": 7}, {"label": "0.2.0", "value": 17}, {"label": "Next", "value": 18}],
+ "say": ["The first release had seven scene types.", "The second, seventeen.", "Next comes eighteen."]}
+```
 
 **Cursor** (`screen` and `zoom-pan`): `cursor` is one target per phrase, `[x, y]` as fractions of the picture, or `null` for none. The cursor glides in from the lower right to each target as its phrase starts and clicks it (with a ripple and a click) two-thirds of a second later. It follows the picture as the camera moves. Find targets by opening the screenshot and measuring: a button at 1195, 598 in a 2000 x 1250 picture is `[0.6, 0.48]`.
 
@@ -109,7 +118,7 @@ the cut runs well over.
 
 **Tool explainer** (20 to 30 s): `statement` the job it does (dark) → `title` → `steps` input, what it does, output → `screen` the result (dark) → `end`.
 
-**Dev tool** (20 to 30 s, no app to film): `statement` the pain (dark) → `terminal` a real run, the line that matters highlighted → `code` the few lines that make it work (dark) → `stat` or `features` → `end`. Pairs with the `terminal` look.
+**Dev tool** (20 to 30 s, no app to film): `statement` the pain (dark) → `terminal` a real run, the line that matters highlighted → `code` the few lines that make it work (dark) → `stat`, `chart` (a benchmark) or `features` → `end`. Pairs with the `terminal` look.
 
 **Hype** (20 to 30 s): `kinetic` the hook (two words, the second on `accent`) → `title` (enter `splice`) → `screen` it at work → `kinetic` with `stack` and `accelerate`, three or four one-word beats → `reframe` or `stat` → `end`, with a `stinger` if there's a good last line. Try `"music": {"end": "tapestop"}`.
 

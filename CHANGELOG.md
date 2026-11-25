@@ -18,6 +18,9 @@ version with the date and bumps `plugin.json` to match.
 - A `portrait` cut, 1080 × 1350 (4:5), for Instagram and LinkedIn feeds: `render.mjs --formats portrait`. It lays
   out like square with room to spare and has captions on by default; `4:5` also works as a `reframe` shape and a
   `mask` frame ([#68](https://github.com/mtblck/reelwright/pull/68)).
+- A `chart` scene: bars or a line that grow one group per phrase, each value counting up, the highlighted bar or
+  point in the accent, with an optional `source` line. In the `terminal` look the bars print as block characters
+  ([#69](https://github.com/mtblck/reelwright/pull/69)).
 - Named targets: a `box` step in capture.mjs records where an element sits on a screenshot, and `cursor` and
   `zoom-pan` `focus` can name it (`"cursor": ["Export button"]`) instead of giving coordinates
   ([#67](https://github.com/mtblck/reelwright/pull/67)).
