@@ -108,6 +108,10 @@ let typeScale = 1;
 export const setTypeScale = (k = 1) => { typeScale = k; };
 export const ts = (px: number) => px * typeScale;
 
+// render.mjs overlay: scenes that paint a background of their own (the stinger's dark) leave it out
+let overlay = false;
+export const setOverlay = (on = false) => { overlay = on; };
+export const isOverlay = () => overlay;
 let fallback = '';
 export const setFallback = (fams: string[] = []) => { fallback = fams.map((f) => `"${f}", `).join(''); };
 export const font = (f: {family: string; weight: number}) => ({fontFamily: `"${f.family}", ${fallback}system-ui, sans-serif`, fontWeight: f.weight});

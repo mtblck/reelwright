@@ -2,7 +2,7 @@ import React from 'react';
 import {AbsoluteFill, Img, OffthreadVideo, interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
 import {CursorLayer, coverMap} from './product';
 import type {Scene} from './types';
-import {Emph, Scribble, asset, countUp, font, mix, rise, sceneColors, ts, useBrand, useFade, useLayout, usePop} from './ui';
+import {Emph, Scribble, asset, countUp, isOverlay, font, mix, rise, sceneColors, ts, useBrand, useFade, useLayout, usePop} from './ui';
 import {useLook, useTilt} from './looks';
 
 type C = ReturnType<typeof sceneColors>;
@@ -318,7 +318,7 @@ export const End: React.FC<P> = ({scene, c}) => {
   if (sting && frame >= sting) {
     const sp = interpolate(frame, [sting + 12, sting + 18], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
     return (
-      <AbsoluteFill style={{background: b.dark, alignItems: 'center', justifyContent: 'center', padding: 90 * u}}>
+      <AbsoluteFill style={{background: isOverlay() ? undefined : b.dark, alignItems: 'center', justifyContent: 'center', padding: 90 * u}}>
         <div style={{...font(b.display), fontSize: ts(120 * k * u), lineHeight: 1, letterSpacing: -3 * u, color: b.paper, textAlign: 'center', opacity: sp, transform: `scale(${1.25 - 0.25 * sp})`}}><Emph text={scene.props.stinger} color={b.accent} /></div>
       </AbsoluteFill>
     );
@@ -372,7 +372,7 @@ export const Kinetic: React.FC<P> = ({scene, c}) => {
   const pops = words.map((_, i) => slam(i));
   const flash = (n === 0 && !scene.props.flashFirst) || look.text === 'type' ? 0 : interpolate(frame - cue(scene, n), [0, 5], [0.35, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
   return (
-    <AbsoluteFill style={{background: col.bg, alignItems: term ? 'flex-start' : 'center', justifyContent: 'center', padding: 80 * u}}>
+    <AbsoluteFill style={{background: isOverlay() ? undefined : col.bg, alignItems: term ? 'flex-start' : 'center', justifyContent: 'center', padding: 80 * u}}>
       {scene.props.stack ? (
         <div style={{display: 'flex', flexDirection: 'column', alignItems: term ? 'flex-start' : 'center', gap: (term ? 0 : 10) * u}}>
           {/* every line is laid out from the first frame and only shown at its cue, so the stack never re-centres as it grows */}
@@ -387,7 +387,7 @@ export const Kinetic: React.FC<P> = ({scene, c}) => {
           ? <div key={n} style={style(n)}>{prompt}<Typed text={words[n] ?? ''} at={cue(scene, n)} color={col.ink} accent={col.hot} /></div>
           : <div key={n} style={{...style(n), ...pops[n]}}><Emph text={words[n] ?? ''} color={col.hot} /></div>
       )}
-      <AbsoluteFill style={{background: col.hot, opacity: flash, pointerEvents: 'none'}} />
+      <AbsoluteFill style={{background: col.hot, opacity: isOverlay() ? 0 : flash, pointerEvents: 'none'}} />
     </AbsoluteFill>
   );
 };

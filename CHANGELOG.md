@@ -36,6 +36,9 @@ version with the date and bumps `plugin.json` to match.
   (iPad) cuts encoded to Apple's spec, with no burned-in captions; it refuses a video outside 15 to 30 s and checks
   each file after rendering. A `tablet` frame for `screen`, with `capture.mjs --device tablet` to fill it
   ([#72](https://github.com/mtblck/reelwright/pull/72)).
+- `render.mjs <run> overlay`: the video over transparency, as a ProRes 4444 MOV and a VP9 WebM, both with alpha,
+  to drop a title, captions or end card into another edit. Backgrounds and the look's layers are left out; text,
+  devices, cards and the mark stay. `--scene 1-2` renders just those scenes ([#73](https://github.com/mtblck/reelwright/pull/73)).
 - Named targets: a `box` step in capture.mjs records where an element sits on a screenshot, and `cursor` and
   `zoom-pan` `focus` can name it (`"cursor": ["Export button"]`) instead of giving coordinates
   ([#67](https://github.com/mtblck/reelwright/pull/67)).

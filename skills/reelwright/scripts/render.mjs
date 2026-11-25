@@ -2,6 +2,8 @@
 // Usage:
 //   node render.mjs <run_dir> stills [--format square] [--safe tiktok|reels|shorts]     one frame per scene -> <run>/stills/sheet.png
 //     --safe shades where that app's buttons and text cover a vertical video (approximate, 1080 x 1920)
+//   node render.mjs <run_dir> overlay [--format landscape] [--scene n | n-m] [--muted]   over transparency, for
+//     another edit: <name>-overlay-<format>.mov (ProRes 4444) and .webm (VP9), both with alpha
 //   node render.mjs <run_dir> loop [--format landscape] [--seconds 5] [--scene n | --from <s>]   a silent seamless loop
 //     -> <name>-loop.mp4, .webm and .gif (under 5 MB), for a README or landing page
 //   node render.mjs <run_dir> check [--formats square,vertical]     text too small, low contrast, off the frame, in a
@@ -26,7 +28,7 @@ const length = args.includes('--length') ? Number(args[args.indexOf('--length') 
 const suffix = length ? `-${length}s` : '';
 const propsFile = path.join(run, `props${suffix}.json`);
 if (!args[0] || !fs.existsSync(propsFile)) {
-  console.error('usage: node render.mjs <run_dir> [stills|check|loop] [--formats square,vertical,portrait,landscape] [--no-gif]   (run build.mjs first, with the same --length)');
+  console.error('usage: node render.mjs <run_dir> [stills|check|overlay|loop] [--formats square,vertical,portrait,landscape] [--no-gif]   (run build.mjs first, with the same --length)');
   process.exit(1);
 }
 const opt = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d);
@@ -113,6 +115,30 @@ if (args[1] === 'check') {
     else found.push(...checkVideo(mp4, fmt));
   }
   process.exit(report(found) ? 1 : 0);
+}
+
+if (args[1] === 'overlay') {
+  // The video over transparency, to drop into another edit: no backgrounds and none of the look's layers, only
+  // the words, devices, cards and mark. ProRes 4444 MOV (for Premiere, Final Cut, Resolve) and VP9 WebM (for the web),
+  // both with alpha. --scene 1 or --scene 1-2 renders just those scenes; --muted leaves the sound out.
+  const fmt = opt('--format', 'landscape');
+  let range = '';
+  if (args.includes('--scene')) {
+    const [a, z = a] = String(opt('--scene')).split('-').map(Number);
+    const sa = props.scenes[a - 1], sz = props.scenes[z - 1];
+    if (!sa || !sz || z < a) throw new Error(`--scene is 1 to ${props.scenes.length}, or a range like 1-2`);
+    range = `${sa.start}-${Math.min(props.durationInFrames - 1, sz.start + sz.dur - 1)}`;
+  }
+  const pf = path.join(run, '.props-overlay.json');
+  fs.writeFileSync(pf, JSON.stringify({...props, overlay: true}));
+  const base = path.join(run, `${slug}-overlay-${fmt}${range ? `-${String(opt('--scene'))}` : ''}`);
+  const alpha = (file, codec) => execFileSync('npx', ['remotion', 'render', bundle, fmt, file, `--props=${pf}`, '--image-format=png', '--log=error', ...codec,
+    ...(range ? [`--frames=${range}`] : []), ...(args.includes('--muted') ? ['--muted'] : []), ...(env.BROWSER ? [`--browser-executable=${env.BROWSER}`] : [])], {cwd: env.TEMPLATE, stdio: ['ignore', 'inherit', 'inherit']});
+  alpha(`${base}.mov`, ['--codec=prores', '--prores-profile=4444', '--pixel-format=yuva444p10le']);
+  alpha(`${base}.webm`, ['--codec=vp9', '--pixel-format=yuva420p']);
+  fs.rmSync(pf);
+  for (const ext of ['mov', 'webm']) console.log(`${base}.${ext}  (${(fs.statSync(`${base}.${ext}`).size / 1e6).toFixed(1)} MB)`);
+  process.exit(0);
 }
 
 if (args[1] === 'loop') {
