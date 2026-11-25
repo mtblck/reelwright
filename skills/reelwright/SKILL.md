@@ -92,7 +92,7 @@ look  all       scene 3 (compare)      31 words on screen for 5.1 s; give it abo
 node <skill>/scripts/render.mjs <run> --formats square,vertical,landscape
 ```
 
-Square and vertical are the social cuts and come first; landscape is for the web. Add `portrait` (1080 × 1350, 4:5) for Instagram and LinkedIn feeds, where it fills more of the screen than square; it lays out like square, with room to spare. Each takes 40 to 60 seconds. Read the `qa-<format>.png` sheets (a frame a second).
+Square and vertical are the social cuts and come first; landscape is for the web (and Google Play, which takes a YouTube link to it). Add `portrait` (1080 × 1350, 4:5) for Instagram and LinkedIn feeds, where it fills more of the screen than square; it lays out like square, with room to spare. For an app's App Store page, add `appstore` (886 × 1920, iPhone) and `appstore-ipad` (1200 × 1600): previews must run 15 to 30 s (render.mjs refuses otherwise; for a longer story, mark scenes `"keep": 15` until they add up to 15 to 30 s, then `build.mjs --length 15` and `render.mjs --length 15`), have no burned-in captions, and are encoded to Apple's spec (H.264 High 4.0, 30 fps, stereo AAC 256k), which the render then checks. Show the app itself: Apple wants previews to be mostly real footage of the app, so lean on `screen` (phone or `tablet` frame) and `zoom-pan` scenes. Each cut takes 40 to 60 seconds. Read the `qa-<format>.png` sheets (a frame a second).
 
 **Gate:** `check` found nothing to fix; every MP4 exists at -14 LUFS (the render checks each one decodes, has every frame and no black frames, and exits 1 if not); the QA sheets show every scene with nothing cut off; and `<name>.gif` is under 5 MB (else render the GIF from a shorter story or drop it).
 

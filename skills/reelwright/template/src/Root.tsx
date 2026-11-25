@@ -10,12 +10,15 @@ const empty: Props = {
 };
 const meta = ({props}: {props: Props}) => ({durationInFrames: Math.max(1, props.durationInFrames)});
 
-// One video, four shapes (portrait, 4:5 for feeds, lays out as square with room to spare). Each scene lays itself out from the frame size.
+// One video, four shapes (portrait, 4:5 for feeds, lays out as square with room to spare), and the two App Store preview sizes. Each scene lays itself out from the frame size.
 export const Root: React.FC = () => (
   <>
     <Composition id="square" component={Video} width={1080} height={1080} fps={30} durationInFrames={90} defaultProps={empty} calculateMetadata={meta} />
     <Composition id="portrait" component={Video} width={1080} height={1350} fps={30} durationInFrames={90} defaultProps={empty} calculateMetadata={meta} />
     <Composition id="vertical" component={Video} width={1080} height={1920} fps={30} durationInFrames={90} defaultProps={empty} calculateMetadata={meta} />
     <Composition id="landscape" component={Video} width={1920} height={1080} fps={30} durationInFrames={90} defaultProps={empty} calculateMetadata={meta} />
+    {/* App Store app previews: iPhone (6.5" and up) lays out as vertical, iPad as portrait */}
+    <Composition id="appstore" component={Video} width={886} height={1920} fps={30} durationInFrames={90} defaultProps={empty} calculateMetadata={meta} />
+    <Composition id="appstore-ipad" component={Video} width={1200} height={1600} fps={30} durationInFrames={90} defaultProps={empty} calculateMetadata={meta} />
   </>
 );

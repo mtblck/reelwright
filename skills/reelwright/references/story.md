@@ -39,7 +39,7 @@ Each phrase in `say` starts the next reveal. Give a scene as many phrases as it 
 |---|---|---|
 | `statement` | `text`*, `kicker` | 1: the text, word by word |
 | `title` | `name` (default brand name), `tagline` (default brand tagline) | 1: mark and name; 2: tagline |
-| `screen` | `image` or `video`*, `frame` (`phone` or `browser`), `caption`*, `url` (browser bar), `zoom` (`[from, to]` for a slow push on an image), `position` (CSS `object-position`), `cursor` | 1: device rises in and the caption types on |
+| `screen` | `image` or `video`*, `frame` (`phone`, `tablet` or `browser`), `caption`*, `url` (browser bar), `zoom` (`[from, to]` for a slow push on an image), `position` (CSS `object-position`), `cursor` | 1: device rises in and the caption types on |
 | `zoom-pan` | `image`* (one screenshot, as large as you have), `focus` (one per phrase: `[x, y, w, h]` as fractions of the picture from its top left, or `null` for the whole picture), `caption`, `cursor` | 1: the picture rises in; each phrase: the camera eases to that phrase's focus. The camera never blows a pixel up past 1.25x, so small text stays sharp; take the screenshot at 2x. In the vertical cut a wide screenshot is cropped, so give every phrase a focus |
 | `features` | `title`*, `items`* (2 to 4 short lines) | 1: title; 2, 3, 4...: each item with a tick |
 | `steps` | `title`, `steps`* (2 to 4) | 1: title (if any); then each step |
@@ -56,7 +56,7 @@ Each phrase in `say` starts the next reveal. Give a scene as many phrases as it 
 | `chart` | `data`* (2 to 8 `{"label", "value"}`; a value is a number or text with one in it: `1.3`, `"1.3 s"`, `"12,000+"`), `kind` (`bar`, default, or `line`), `title`, `highlight` (the index in the accent, default the largest), `source` (where the numbers are from, shown small under the chart). Values must be zero or more | 1: the title and the first group; the bars or points come in one group per phrase, as even as they can be, each value counting up. Bars start from zero, so the heights are honest |
 | `end` | `button`*, `url` (default brand url), `stinger` (one short line after the card: a cut to dark, a beat of silence, then the line slams in with a hit; adds 1.7 s, and the music ends before it) | 1: mark, name and button; 2: the button is pressed and the URL appears |
 
-Screen captures: a phone clip from `capture.mjs --device phone --clip` fits the `phone` frame; a desktop screenshot fits `browser`. Videos play muted.
+Screen captures: a phone clip from `capture.mjs --device phone --clip` fits the `phone` frame; `--device tablet` (820 × 1180 at 2x, an iPad held upright) fits `tablet`; a desktop screenshot fits `browser`. For example `{"type": "screen", "bg": "dark", "frame": "tablet", "image": "media/tablet-editor.png", "caption": "Edit on the *big screen*."}`. Videos play muted.
 
 **Proof is real.** A `quote` is someone's actual words, copied exactly, with where they said it (an issue, a review, a post); a `stat`, `chart` or `compare` row is a number or fact you can point to in the repo, its README or `gh api` (stars, downloads, benchmark output). If there's nothing real to quote, leave the scene out; never write a testimonial.
 

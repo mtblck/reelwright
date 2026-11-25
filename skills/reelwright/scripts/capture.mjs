@@ -1,5 +1,5 @@
 // Screenshots and a short screen clip of a running app or site, for screen scenes.
-// Usage: node capture.mjs <url> <out_dir> [--device phone|desktop] [--steps steps.json] [--clip]
+// Usage: node capture.mjs <url> <out_dir> [--device phone|tablet|desktop] [--steps steps.json] [--clip]
 //   steps.json: [{"click": "Try a sample"}, {"wait": 2000}, {"drag": "[role=slider]", "dx": -120}, {"shot": "traced"},
 //                {"scroll": 600}, {"type": ["input[name=q]", "hello"]}, {"press": "Enter"},
 //                {"box": "Export button", "selector": "button.export"}, {"box": "Download SVG"}, {"shot": "result"}]
@@ -17,7 +17,7 @@ import path from 'node:path';
 
 const args = process.argv.slice(2);
 const [url, out] = args;
-if (!url || !out) { console.error('usage: node capture.mjs <url> <out_dir> [--device phone|desktop] [--steps steps.json] [--clip]'); process.exit(1); }
+if (!url || !out) { console.error('usage: node capture.mjs <url> <out_dir> [--device phone|tablet|desktop] [--steps steps.json] [--clip]'); process.exit(1); }
 const opt = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d);
 const device = opt('--device', 'phone');
 const steps = args.includes('--steps') ? JSON.parse(fs.readFileSync(opt('--steps'), 'utf8')) : [];
@@ -33,7 +33,10 @@ function playwright() {
   process.exit(1);
 }
 const {chromium} = playwright();
-const vp = device === 'desktop' ? {width: 1280, height: 800} : {width: 390, height: 844};
+// CSS pixels, captured at 2x: an iPhone 14, an iPad Air held upright, a laptop
+const VIEWPORTS = {phone: {width: 390, height: 844}, tablet: {width: 820, height: 1180}, desktop: {width: 1280, height: 800}};
+if (!VIEWPORTS[device]) { console.error(`--device is one of ${Object.keys(VIEWPORTS).join(', ')}`); process.exit(1); }
+const vp = VIEWPORTS[device];
 const browser = await chromium.launch();
 const vidDir = path.join(out, `.video-${device}`);
 const ctx = await browser.newContext({viewport: vp, deviceScaleFactor: 2, ...(clip ? {recordVideo: {dir: vidDir, size: vp}} : {})});

@@ -147,13 +147,14 @@ export const Statement: React.FC<P> = ({scene, c}) => {
 };
 
 // screen: a real screenshot or screen clip in a browser or phone frame, with a caption.
-// props: {image? | video?, frame: 'browser'|'phone', caption*, url?, zoom?: [from, to]}
+// props: {image? | video?, frame: 'browser'|'phone'|'tablet', caption*, url?, zoom?: [from, to]}
 export const Screen: React.FC<P> = ({scene, c}) => {
   const b = useBrand();
   const {u, vertical, landscape, tall} = useLayout();
   const frame = useCurrentFrame();
   const p = usePop(cue(scene), 16);
   const phone = scene.props.frame === 'phone';
+  const tablet = scene.props.frame === 'tablet';
   const [z0, z1] = scene.props.zoom ?? [1, 1.06];
   const zoom = interpolate(frame, [0, scene.dur], [z0, z1]);
   const r = (b.radius ?? 20) * u;
@@ -165,15 +166,22 @@ export const Screen: React.FC<P> = ({scene, c}) => {
   const bw = landscape ? 1080 * u : vertical ? 960 * u : 900 * u;
   const bh = landscape ? 680 * u : vertical ? 1000 * u : (600 + tall * 0.6) * u;
   const pw = (vertical ? 640 : landscape ? 410 : 380 + tall * 0.4) * u;
+  // a tablet held upright, the shape of capture.mjs --device tablet (820 x 1180)
+  const th = (vertical ? 1080 : landscape ? 840 : 640 + tall * 0.6) * u;
+  const tw = th * (820 / 1180);
   // a cursor over the picture: its box is the device's screen, and the picture fills it as object-fit: cover does
   const [iw, ih] = scene.props.mediaSize ?? [1, 1];
-  const [sw, sh] = phone ? [pw - 32 * u, pw * 2.16 - 32 * u] : [bw - 4 * u, bh - 60 * u];
+  const [sw, sh] = phone ? [pw - 32 * u, pw * 2.16 - 32 * u] : tablet ? [tw - 36 * u, th - 36 * u] : [bw - 4 * u, bh - 60 * u];
   const pointer = scene.props.cursor && scene.props.mediaSize ? (
     <CursorLayer scene={scene} points={scene.props.cursor} w={sw} h={sh} map={coverMap(iw, ih, sw, sh, scene.props.video ? 'top' : scene.props.position === 'center' ? 'center' : 'top', scene.props.video ? 1 : Number(zoom))} />
   ) : null;
   const device = phone ? (
     <div data-match style={{width: pw, height: pw * 2.16, borderRadius: 64 * u, padding: 16 * u, background: '#0b0b0c', boxShadow: `0 ${30 * u}px ${80 * u}px ${mix(b.dark, '#000000', 0.5)}55`}}>
       <div style={{width: '100%', height: '100%', borderRadius: 50 * u, overflow: 'hidden', background: b.paper, position: 'relative'}}>{media}{pointer}</div>
+    </div>
+  ) : tablet ? (
+    <div data-match style={{width: tw, height: th, borderRadius: 44 * u, padding: 18 * u, background: '#0b0b0c', boxShadow: `0 ${30 * u}px ${80 * u}px ${mix(b.dark, '#000000', 0.5)}55`}}>
+      <div style={{width: '100%', height: '100%', borderRadius: 26 * u, overflow: 'hidden', background: b.paper, position: 'relative'}}>{media}{pointer}</div>
     </div>
   ) : (
     <div data-match style={{width: bw, height: bh, borderRadius: r, overflow: 'hidden', background: b.paper, border: `${2 * u}px solid ${mix(c.ink, c.bg, 0.85)}`, boxShadow: `0 ${30 * u}px ${80 * u}px #00000030`, display: 'flex', flexDirection: 'column'}}>
@@ -184,8 +192,9 @@ export const Screen: React.FC<P> = ({scene, c}) => {
       <div style={{flex: 1, overflow: 'hidden', position: 'relative'}}>{media}{pointer}</div>
     </div>
   );
-  // A phone is too tall to stack under a caption in a square frame, so it sits beside it there too.
-  const side = phone && !vertical;
+  // A phone or tablet is too tall to stack under a caption in a square frame, so it sits beside it there too;
+  // a tablet in a frame with height to spare (4:5, the iPad preview) stacks, so the caption keeps its width.
+  const side = (phone || (tablet && tall < 200)) && !vertical;
   const caption = <Words text={scene.props.caption} at={cue(scene) + 4} size={(landscape ? 76 : 72) * u} color={c.ink} accent={b.accent} align={side ? 'left' : 'center'} />;
   const tilt = useTilt();
   const dev = <div style={{transform: `translateY(${(1 - p) * 160 * u}px) scale(${0.92 + 0.08 * p}) ${tilt}`, opacity: Math.min(1, p * 2)}}>{device}</div>;
