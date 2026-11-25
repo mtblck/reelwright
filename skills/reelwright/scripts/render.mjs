@@ -7,6 +7,7 @@
 //   node render.mjs <run_dir> [--formats square,vertical,landscape] [--no-gif] [--length 6|15]
 // --length renders a short cut that build.mjs --length made: <name>-<n>s-<format>.mp4.
 // Writes <run>/<name>-<format>.mp4 at -14 LUFS, <name>-poster.png and <name>.gif (from the first format),
+// <name>-<format>.srt and .vtt (subtitles), <name>-chapters.txt with the landscape cut,
 // and qa-<format>.png (one frame a second) for checking.
 import {execFileSync, spawnSync} from 'node:child_process';
 import fs from 'node:fs';
@@ -141,6 +142,14 @@ for (const {fmt, raw, out} of outs) {
   const secs = props.durationInFrames / 30;
   ff('-i', out, '-vf', `fps=1,scale=${fmt === 'landscape' ? 384 : 270}:-1,tile=6x${Math.ceil(secs / 6)}:padding=4:color=white`, '-frames:v', '1', path.join(run, `qa${suffix}-${fmt}.png`));
   console.log(`${out}  (${secs.toFixed(1)} s)`);
+  subs(out.replace(/\.mp4$/, ''));
+}
+// chapter marks for the landscape cut (the one that goes to YouTube), to paste into its description
+if (formats.includes('landscape') && props.chapters?.length) {
+  const file = path.join(run, `${slug}-chapters.txt`);
+  const mmss = (fr) => { const t = Math.round(fr / 30); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+  fs.writeFileSync(file, props.chapters.map((c) => `${mmss(c.at)} ${c.title}`).join('\n') + '\n');
+  console.log(file + (props.chapters.length < 3 ? '  (YouTube shows chapters only with 3 or more of 10 s each: this video is too short for them)' : ''));
 }
 // poster and GIF from the first format
 const first = outs[0];
@@ -165,6 +174,17 @@ if (first) {
     if (src !== first.out) fs.rmSync(src);
     console.log(`${gif}  (${(fs.statSync(gif).size / 1e6).toFixed(1)} MB)`);
   }
+}
+
+// subtitle files beside a cut: <base>.srt and <base>.vtt, timed to the voice
+function subs(base) {
+  if (!props.subtitles?.length) return;
+  const stamp = (fr, sep) => { const ms = Math.round((fr / 30) * 1000); const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, sec = Math.floor(ms / 1000) % 60; return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}${sep}${String(ms % 1000).padStart(3, '0')}`; };
+  // two lines at most, broken near the middle
+  const wrap = (t) => { if (t.length <= 42) return t; const mid = t.length / 2; let k = -1; for (let i = 0; i < t.length; i++) if (t[i] === ' ' && (k < 0 || Math.abs(i - mid) < Math.abs(k - mid))) k = i; return k < 0 ? t : `${t.slice(0, k)}\n${t.slice(k + 1)}`; };
+  const cues = props.subtitles.map((c) => [stamp(c.from, ','), stamp(c.to, ','), wrap(c.text)]);
+  fs.writeFileSync(`${base}.srt`, cues.map(([a, b, t], i) => `${i + 1}\n${a} --> ${b}\n${t}\n`).join('\n'));
+  fs.writeFileSync(`${base}.vtt`, 'WEBVTT\n\n' + cues.map(([a, b, t]) => `${a.replace(',', '.')} --> ${b.replace(',', '.')}\n${t}\n`).join('\n'));
 }
 
 // first loudnorm pass: what the mix measures, so the second pass lands on target

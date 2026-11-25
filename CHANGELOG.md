@@ -15,6 +15,9 @@ version with the date and bumps `plugin.json` to match.
   CSS (adjusted so text stays readable), its fonts (or the closest Google Fonts), its icon as the mark and its header
   logo, with a swatch sheet to check. The build uses it whenever the story has no `brandJson`
   ([#65](https://github.com/mtblck/reelwright/pull/65)).
+- Subtitle files: every cut gets `.srt` and `.vtt` beside its MP4, timed to the voice and spelled as written, and
+  the landscape cut gets `<name>-chapters.txt` with YouTube chapter marks (a scene's `chapter` names it)
+  ([#66](https://github.com/mtblck/reelwright/pull/66)).
 - `brand.logo` and `logoDark`: a wide logo on `title` and `end` in place of the mark and name
   ([#65](https://github.com/mtblck/reelwright/pull/65)).
 
