@@ -217,7 +217,19 @@ for (const s of scenes) {
 }
 // a picture's or clip's size in pixels, so zoom-pan can cap its zoom and a cursor can find its targets
 const probe = (file) => { try { const [w, h] = execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', file], {encoding: 'utf8'}).trim().split(',').map(Number); return w && h ? [w, h] : undefined; } catch { return undefined; } };
-const local = (o) => { for (const k of ['before', 'after', 'avatar']) if (o[k] && !/^https?:/.test(o[k])) o[k] = copy(path.resolve(run, o[k]), 'media'); for (const k of ['image', 'video']) if (o[k] && !/^https?:/.test(o[k])) { const src = path.resolve(run, o[k]); o.mediaSize ??= probe(src); o[k] = copy(src, 'media'); } };
+// cursor and zoom-pan targets can name a box capture.mjs recorded ("Export button") instead of giving numbers:
+// <device>-<shot>.png has its boxes in <device>-boxes.json under that shot, as fractions of the picture
+function named(o, src) {
+  const wants = (a) => (a ?? []).some((v) => typeof v === 'string');
+  if (!wants(o.cursor) && !wants(o.focus)) return;
+  const m = path.basename(src).match(/^(.+?)-(.+)\.png$/i);
+  const file = m && path.join(path.dirname(src), `${m[1]}-boxes.json`);
+  const boxes = file && fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8'))[m[2]] ?? {} : {};
+  const get = (n) => { if (!boxes[n]) throw new Error(`no box "${n}" for ${path.basename(src)}: record it with a box step before that shot (have: ${Object.keys(boxes).join(', ') || 'none'})`); return boxes[n]; };
+  if (o.cursor) o.cursor = o.cursor.map((v) => (typeof v === 'string' ? (([x, y, w, h]) => [Math.round((x + w / 2) * 1e4) / 1e4, Math.round((y + h / 2) * 1e4) / 1e4])(get(v)) : v));
+  if (o.focus) o.focus = o.focus.map((v) => (typeof v === 'string' ? get(v) : v));
+}
+const local = (o) => { if (o.image && !/^https?:/.test(o.image)) named(o, path.resolve(run, o.image)); for (const k of ['before', 'after', 'avatar']) if (o[k] && !/^https?:/.test(o[k])) o[k] = copy(path.resolve(run, o[k]), 'media'); for (const k of ['image', 'video']) if (o[k] && !/^https?:/.test(o[k])) { const src = path.resolve(run, o[k]); o.mediaSize ??= probe(src); o[k] = copy(src, 'media'); } };
 for (const s of scenes) { local(s.props); (s.props.shapes ?? []).forEach(local); (s.props.logos ?? []).forEach(local); }
 
 // one voice track, every clip at its place
