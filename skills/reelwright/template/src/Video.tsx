@@ -35,8 +35,8 @@ export const Video: React.FC<Props> = (p) => {
         {p.scenes.map((s, i) => {
           const Comp = ({...SCENES, ...DEV_SCENES, ...PRODUCT_SCENES, ...PROOF_SCENES} as any)[s.type];
           const c = sceneColors(p.brand, s.bg);
-          // the accent, moved only as far as it takes to read at 3:1 on this scene's background (WCAG for large text and shapes)
-          const accent = readable(p.brand.accent, c.bg, p.brand.paper, p.brand.ink);
+          // the accent, lightened only as far as it takes to read at 3:1 on this scene's background (WCAG for large text and shapes)
+          const accent = readable(p.brand.accent, c.bg, p.brand.paper);
           const brand = accent === p.brand.accent ? p.brand : {...p.brand, accent};
           return (
             <Sequence key={i} from={s.start} durationInFrames={s.dur + (i < p.scenes.length - 1 ? OVERLAP : 0)} name={`${i + 1} ${s.type}`}>

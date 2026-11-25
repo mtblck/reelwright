@@ -35,11 +35,13 @@ export function mix(a: string, b: string, t: number) {
 // WCAG contrast between two hex colours (1 to 21)
 const lum = (h: string) => [1, 3, 5].map((i) => parseInt(h.replace('#', '').padEnd(6, '0').slice(i - 1, i + 1), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)).reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0);
 export const contrast = (a: string, b: string) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
-// fg moved towards light (on a dark bg) or dark (on a light one), only as far as it takes to reach min:1 against bg
-export const readable = (fg: string, bg: string, light: string, dark: string, min = 3) => {
-  const to = lum(bg) < 0.4 ? light : dark;
-  for (let t = 0; t <= 1; t += 0.05) { const c = mix(fg, to, t); if (contrast(c, bg) >= min) return c; }
-  return to;
+// fg lightened towards light, only as far as it takes to reach min:1 against bg; fg as it is when it already
+// does, or when no amount of lightening gets there (a light or mid-tone bg). Only lightened: dark text sits on
+// accent fills (badges, the hot node), and a lighter fill keeps that text readable.
+export const readable = (fg: string, bg: string, light: string, min = 3) => {
+  if (contrast(fg, bg) >= min || contrast(light, bg) < min) return fg;
+  for (let t = 0.05; t < 1; t += 0.05) { const c = mix(fg, light, t); if (contrast(c, bg) >= min) return c; }
+  return light;
 };
 
 // Springs and fades that start at a frame (a cue).

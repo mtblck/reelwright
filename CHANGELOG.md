@@ -37,8 +37,8 @@ version with the date and bumps `plugin.json` to match.
 
 ### Changed
 
-- A scene's accent is lightened or darkened just enough to reach 3:1 against that scene's background, so starred
-  words and highlights stay readable on the brand colour ([#70](https://github.com/mtblck/reelwright/pull/70)).
+- On a dark or brand-coloured scene, the accent is lightened just enough to reach 3:1 against the background, so
+  starred words and highlights stay readable ([#70](https://github.com/mtblck/reelwright/pull/70)).
 
 ### Fixed
 

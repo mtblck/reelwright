@@ -51,8 +51,8 @@ const ff = (...a) => execFileSync('ffmpeg', ['-v', 'error', '-y', ...a]);
 // the parts of a vertical video an app covers with its own buttons, captions and tabs, in pixels at
 // 1080 x 1920: [top, bottom, left, right]. Approximate, and they shift between app versions.
 const SAFE = {tiktok: [150, 480, 60, 140], reels: [250, 420, 60, 120], shorts: [140, 400, 60, 190]};
-// the frame where every reveal in a scene has happened: just before the cut
-const settled = (s) => Math.min(s.start + Math.max(s.cues.at(-1) + 24, s.dur - 10), props.durationInFrames - 1);
+// the frame where every reveal in a scene has happened: just before the cut, and never past it
+const settled = (s) => Math.min(s.start + Math.min(s.dur - 1, Math.max(s.cues.at(-1) + 24, s.dur - 10)), props.durationInFrames - 1);
 // The smallest text each cut can carry, in pixels at 1080 on the short side: a phone held upright needs the most.
 const MIN_PX = {vertical: 30, portrait: 26, square: 26, landscape: 22};
 const where = (fr) => { const i = props.scenes.findLastIndex((s) => s.start <= fr); return i < 0 ? '' : `scene ${i + 1} (${props.scenes[i].type})`; };
@@ -89,7 +89,10 @@ if (args[1] === 'check') {
   const found = [...(await lint(fmts))];
   for (const fmt of fmts) {
     const mp4 = path.join(run, `${slug}-${fmt}.mp4`);
-    if (fs.existsSync(mp4)) found.push(...checkVideo(mp4, fmt));
+    if (!fs.existsSync(mp4)) continue;
+    // an MP4 from before the last build is of an older timeline: render again to check it
+    if (fs.statSync(mp4).mtimeMs < fs.statSync(propsFile).mtimeMs) found.push({level: 'warn', fmt, at: '', msg: `${path.basename(mp4)} is older than the last build: not checked`});
+    else found.push(...checkVideo(mp4, fmt));
   }
   process.exit(report(found) ? 1 : 0);
 }
@@ -228,24 +231,25 @@ async function lint(fmts) {
       const at = `scene ${i + 1} (${s.type})`;
       const add = (level, msg, key) => { if (!seen.has(key)) { seen.add(key); out.push({level, fmt, at, msg}); } };
       for (const it of items) {
+        if (it.scene != null && it.scene !== i && !it.caption) continue; // the next scene coming in, or the last going
         const [x, y, bw, bh] = it.box;
         if (it.op < 0.05 || bw < 1 || bh < 1 || x > w || y > h || x + bw < 0 || y + bh < 0) continue;
         const q = `"${it.show.length > 40 ? it.show.slice(0, 40) + '…' : it.show}"`;
-        if (it.op >= 0.5 && (x < -4 || y < -4 || x + bw > w + 4 || y + bh > h + 4)) add('fail', `${q} runs off the frame`, `off${it.text}`);
+        if (it.op >= 0.5 && (x < -4 || y < -4 || x + bw > w + 4 || y + bh > h + 4)) add('fail', `${q} runs off the frame`, `off${it.text}${i}`);
         const min = MIN_PX[fmt] * u;
-        if (it.op >= 0.5 && it.px < min - 0.5) add('fail', `${q} is ${Math.round(it.px / u)} px; the ${fmt} cut needs ${MIN_PX[fmt]} or more`, `px${it.text}`);
+        if (it.op >= 0.5 && it.px < min - 0.5) add('fail', `${q} is ${Math.round(it.px / u)} px; the ${fmt} cut needs ${MIN_PX[fmt]} or more`, `px${it.text}${i}`);
         // faded on purpose (a dimmed line, a word still to come) or over a picture: not measured
         if (it.bg && it.op >= 0.9) {
           const need = it.px >= 40 * u ? 3 : 4.5;
           const r = ratio(blend(it.color, it.bg, it.color[3] * it.op), it.bg);
-          if (r < need) add('fail', `${q} has contrast ${r.toFixed(1)}:1 against its background; it needs ${need}:1 at this size`, `cr${it.text}`);
+          if (r < need) add('fail', `${q} has contrast ${r.toFixed(1)}:1 against its background; it needs ${need}:1 at this size`, `cr${it.text}${i}`);
         }
         if (fmt === 'vertical') {
           const k = w / 1080;
           // the bars top and bottom run the full width; the button rails at the sides only down the lower half
           const low = y + bh > h * 0.45;
           const apps = Object.entries(SAFE).filter(([, [t, b, l, r]]) => y < t * k || y + bh > h - b * k || (low && (x < l * k || x + bw > w - r * k))).map(([a]) => a);
-          if (apps.length && it.op >= 0.5) add('warn', `${q} sits where ${apps.join(', ')} put their buttons or caption`, `safe${it.text}`);
+          if (apps.length && it.op >= 0.5) add('warn', `${q} sits where ${apps.join(', ')} put their buttons or caption`, `safe${it.text}${i}`);
         }
         if (it.op >= 0.5 && !it.caption && !words.has(`${i}:${fmt}`)) words.set(`${i}:${fmt}`, 0);
         if (it.op >= 0.5 && !it.caption) words.set(`${i}:${fmt}`, words.get(`${i}:${fmt}`) + it.text.split(/\s+/).length);
@@ -273,10 +277,13 @@ function checkVideo(file, fmt) {
   const n = parseInt(spawnSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-count_packets', '-show_entries', 'stream=nb_read_packets', '-of', 'csv=p=0', file], {encoding: 'utf8'}).stdout.trim(), 10);
   if (!(Math.abs(n - props.durationInFrames) <= 1)) add('fail', '', `has ${Number.isNaN(n) ? 'no readable' : n} frames, the timeline ${props.durationInFrames}: render it again`);
   // black: darker than any of the brand's backgrounds (a brand whose dark is black can't be told apart, so it isn't checked)
-  const y8 = (hex) => { const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  // only near-pure black counts (a dark screenshot or a phone's bezel is lighter), and not when the brand's own
+  // dark is black too. The threshold is on 0 to 255 luma; video black is 16.
+  const y8 = (hex) => { let h = String(hex).replace('#', ''); if (h.length <= 4) h = [...h.slice(0, 3)].map((c) => c + c).join(''); const [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
   const darkest = Math.min(...[props.brand.dark, props.brand.paper, props.brand.primary].map(y8));
-  if (darkest > 12) {
-    const black = spawnSync('ffmpeg', ['-i', file, '-vf', `blackdetect=d=0.03:pic_th=0.98:pix_th=${Math.min(0.1, (darkest - 6) / 255).toFixed(3)}`, '-an', '-f', 'null', '-'], {encoding: 'utf8'}).stderr;
+  if (!(darkest > 4)) add('warn', '', `not checked for black frames: the brand's ${Number.isNaN(darkest) ? 'colours could not be read' : 'dark is black'}`);
+  else {
+    const black = spawnSync('ffmpeg', ['-i', file, '-vf', 'blackdetect=d=0.03:pic_th=0.98:pix_th=0.075', '-an', '-f', 'null', '-'], {encoding: 'utf8'}).stderr;
     for (const m of black.matchAll(/black_start:([\d.]+) black_end:([\d.]+)/g)) add('fail', where(Math.round(Number(m[1]) * 30)), `black from ${Number(m[1]).toFixed(2)} to ${Number(m[2]).toFixed(2)} s`);
   }
   // brightness of each frame (0 to 255); a frame far brighter or darker than both its neighbours is a flash
