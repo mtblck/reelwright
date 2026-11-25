@@ -41,7 +41,7 @@ Real screens beat everything else. Build and start the project the way its READM
 node <skill>/scripts/capture.mjs http://localhost:5173/ <run>/media --device phone --steps <run>/steps.json --clip
 ```
 
-Steps are clicks, typing, drags and waits that show the product doing its one job (load a sample, run it, show the result). Keep the clip under 8 seconds of action. Read the screenshots (open the PNGs) to check they show the right thing.
+Steps are clicks, typing, drags and waits that show the product doing its one job (load a sample, run it, show the result). Add a `box` step for each button or panel a cursor will click or the camera will zoom to, so the story can name it instead of guessing coordinates (see Cursor in `references/story.md`). Keep the clip under 8 seconds of action. Read the screenshots (open the PNGs) to check they show the right thing.
 
 **Gate:** you can say, in one sentence each, what it is, who it's for, the problem, what it does about it, one proof point, and the call to action with its URL. You have at least one real screen.
 

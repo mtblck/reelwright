@@ -60,6 +60,18 @@ Screen captures: a phone clip from `capture.mjs --device phone --clip` fits the 
 **Proof is real.** A `quote` is someone's actual words, copied exactly, with where they said it (an issue, a review, a post); a `stat` or `compare` row is a number or fact you can point to in the repo, its README or `gh api` (stars, downloads, benchmark output). If there's nothing real to quote, leave the scene out; never write a testimonial.
 
 **Cursor** (`screen` and `zoom-pan`): `cursor` is one target per phrase, `[x, y]` as fractions of the picture, or `null` for none. The cursor glides in from the lower right to each target as its phrase starts and clicks it (with a ripple and a click) two-thirds of a second later. It follows the picture as the camera moves. Find targets by opening the screenshot and measuring: a button at 1195, 598 in a 2000 x 1250 picture is `[0.6, 0.48]`.
+
+Better, name them: when capture.mjs takes the screenshot, a `box` step records where an element really is, and a target (or a `zoom-pan` focus) can give that name instead of numbers. The cursor goes to the box's centre and the camera frames the whole box:
+
+```json
+[{"box": "Export button", "selector": "button.export"}, {"shot": "result", "boxes": {"Stats": "#stats", "Download SVG": ""}}]
+```
+
+```json
+{"type": "zoom-pan", "image": "media/desktop-result.png", "focus": ["Stats", "Export button"], "cursor": ["Stats", "Export button"], "say": ["...", "..."]}
+```
+
+A box step belongs to the next shot; a shot's `boxes` map names to selectors (an empty selector finds the element by its text, which is the name). They're saved in `media/<device>-boxes.json`, and the build says which names a shot has if one is missing.
 ## Subtitles and chapters
 
 Every cut gets `<name>-<format>.srt` and `.vtt` beside its MP4 (short cuts too), timed to the voice, with each
