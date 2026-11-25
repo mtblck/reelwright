@@ -17,6 +17,7 @@ A short video built from what the project really is: its own screens, its own br
 | `scripts/capture.mjs` | `node <skill>/scripts/capture.mjs <url> <run>/media [--device phone\|desktop] [--steps steps.json] [--clip]`: screenshots and a screen clip of the running app, driven by a list of steps. |
 | `scripts/term.mjs` | `node <skill>/scripts/term.mjs <run>/media/term.json [--cwd <dir>] [--show "cmd as typed"] -- <cmd> <args...>`: runs a command and records its real output (colours stripped, 40 lines at most) for a `terminal` scene's `transcript`. |
 | `scripts/build.mjs` | `node <skill>/scripts/build.mjs <run>`: reads `<run>/story.json`, voices each phrase, lays out the timeline, writes the voice track, fonts, sound effects and music into `<run>/public/` and `<run>/props.json`. Prints the timeline. |
+| `scripts/reference.mjs` | `node <skill>/scripts/reference.mjs <video file \| url> <run>`: a contact sheet of a reference video someone likes, one still per shot, with its pace, cuts, tone and colour measured; a page gives screenshots. For borrowing a style, never material. |
 | `scripts/brand.mjs` | `node <skill>/scripts/brand.mjs <url> <run>`: the brand from a live site when there's no brand kit; writes `<run>/site-brand.json` and a swatch to check. |
 | `scripts/render.mjs` | `node <skill>/scripts/render.mjs <run> stills [--format square]` for a contact sheet; `check [--formats square,vertical]` measures text size, contrast, safe zones and reading time, and checks the MP4s already rendered; `node <skill>/scripts/render.mjs <run> [--formats square,vertical,portrait,landscape]` for the videos, GIF and poster; `stills --format vertical --safe tiktok` (or `reels`, `shorts`) shades where the app's buttons cover; `loop` for a silent seamless loop; `--length 6` renders a short cut. |
 | `scripts/music.mjs` | Writes the music bed (called by `build.mjs`). Moods `bright`, `calm`, `tech`. |
@@ -47,7 +48,7 @@ Steps are clicks, typing, drags and waits that show the product doing its one jo
 
 ### 2. Story
 
-Write `<run>/story.json` from a template in `references/story.md` (app launch, feature demo, tool explainer). Rules:
+Write `<run>/story.json` from a template in `references/story.md` (app launch, feature demo, tool explainer). If the person points at a video or page whose style they like, run `scripts/reference.mjs` on it first, read `<run>/reference/sheet.png`, and show them a short note of what you'll borrow (pace, cuts or moves, tone, look) mapped onto Reelwright's scenes, `enter` and `look` before building (Matching a reference in `references/story.md`). Borrow the style only: none of its footage, logos, words or music. Rules:
 - **Words from the project.** Reuse the README's and site's own phrases. Invent nothing that sounds like a fact: no made-up numbers, users or quotes.
 - **60 to 90 spoken words** in total, which comes out at 20 to 35 seconds. One idea per scene.
 - **`say` is a list of phrases.** Each phrase is voiced on its own and starts the scene's next reveal: the title's name on phrase 1 and tagline on phrase 2, each feature item on its own phrase, the end button press on phrase 2. Count reveals against phrases (`references/story.md` lists them per scene).

@@ -133,6 +133,42 @@ the first scene and the end card, and the 15 s cut adds the `title`. The cut alw
 hard cut, and the 6 s one drops any stinger. Phrases keep their full length, so mark short scenes: build warns when
 the cut runs well over.
 
+## Matching a reference
+
+When someone points at a video or page they like ("like this one"), look at it before writing the story:
+
+```bash
+node <skill>/scripts/reference.mjs <video file | http(s) url> <run>
+```
+
+It writes `<run>/reference/sheet.png` (a still from the middle of each shot, with its start time) and
+`reference.json`: the shots, the median shot length and pace (`fast` under a second, `medium` to 2.5 s, `slow`
+over), whether shots change on hard cuts or moves, the tone (`dark`, `light`, `mixed`), colour (`muted`,
+`moderate`, `saturated`), movement within shots, dips to black, and a suggestion for each. A link to a web page
+gives screenshots down the page (desktop and phone) and no pace. Video sites like YouTube don't hand over the file:
+ask for the file itself.
+
+Read the sheet, then write a short borrowing note and show it to the person before building. Map what you see onto
+what Reelwright has:
+
+| In the reference | In the story |
+| --- | --- |
+| Pace | Phrase length (shorter phrases, reveals every second), `kinetic` with `stack` and `accelerate` for fast; `hold`, fewer scenes and `zoom-pan` for slow |
+| Cuts or moves | `enter`: `cut`, `glitch` for hard cuts; `slide`, `push`, `whip`, `zoom`, `fade`, `match` for moves |
+| Tone and colour | `bg` across the scenes; how often the brand colour fills a scene; `music.mood` |
+| Type | Big tight capitals: `poster`; mono: `terminal`; everything else keeps the brand's fonts |
+| Texture | Grain or a grade: `film`; grid lines: `blueprint`; hand-made: `paper` or `sketch`; tilted 3D: `isometric` |
+| Shots | Which scene types carry it: product close-ups to `zoom-pan`, UI walk-throughs to `screen`, words on colour to `statement` and `kinetic` |
+
+A borrowing note for a fast, dark launch film with hard cuts and a grainy grade:
+
+> From the reference I'll borrow: the pace (shots under a second, so short phrases and two `kinetic` beats), hard
+> cuts with one `glitch` into the hook, mostly dark backgrounds, and the grain (the `film` look). I won't use any
+> of its footage, logos, words or music: the screens, lines and colours all come from your project.
+
+Borrow the style, never the material: no frames, footage, logos, text, music or people from the reference, and
+no brand colours or fonts that aren't the project's. `build.mjs` refuses a story that points into `reference/`.
+
 ## Templates
 
 **Open cold.** The first 1.5 seconds are the hook (the problem, a bold claim or two kinetic words), before any logo; the `title` comes second. People decide whether to keep watching before they know whose video it is.

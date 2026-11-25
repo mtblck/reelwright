@@ -33,6 +33,13 @@ const env = Object.fromEntries(
     .trim().split('\n').filter((l) => l.includes('=')).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]),
 );
 const story = JSON.parse(fs.readFileSync(path.join(run, 'story.json'), 'utf8'));
+// reference/ (from reference.mjs) is someone else's video or page, there to look at: none of it goes into this one
+{
+  const ref = path.join(run, 'reference') + path.sep;
+  const walk = (v, at) => (typeof v === 'string' ? (path.resolve(run, v).startsWith(ref) ? [at] : []) : v && typeof v === 'object' ? Object.entries(v).flatMap(([k, x]) => walk(x, `${at}.${k}`)) : []);
+  const used = walk(story, 'story');
+  if (used.length) { console.error(`! ${used.join(', ')} points into reference/. The reference is only for borrowing a style: use the project's own screens, words and brand.`); process.exit(1); }
+}
 // a short cut: scenes whose `keep` is at least this length (6 keeps a scene in the 6 s and 15 s cuts, 15 only in
 // the 15 s one). With no `keep` anywhere: the first and last scenes, plus the title for 15 s.
 const length = process.argv.includes('--length') ? Number(process.argv[process.argv.indexOf('--length') + 1]) : 0;
