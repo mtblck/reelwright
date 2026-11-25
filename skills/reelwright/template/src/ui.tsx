@@ -44,13 +44,16 @@ export const useFade = (at: number, len = 8) => {
 };
 export const rise = (p: number, u: number, d = 40) => ({opacity: Math.min(1, p * 1.4), transform: `translateY(${(1 - p) * d * u}px)`});
 
-// "12,000+" at t (0..1, eased here) -> "8,437+": the first number in a value counts up, the rest stays.
-// A value with no number above zero is shown as it is.
+// "12,000+" at t (0..1) -> "8,437+": the first number in a value counts up to it, the rest of the text stays.
+// t is used as given (ease it first). A value with no number above zero is shown as it is.
+export const NUM = /[0-9][0-9,]*(?:\.([0-9]+))?/;
 export const countUp = (raw: string, t: number) => {
-  const n = parseFloat(raw.replace(/,/g, '').match(/[0-9]*\.?[0-9]+/)?.[0] ?? '');
-  const dec = (raw.match(/[0-9]\.([0-9]+)/)?.[1] ?? '').length;
-  const now = n * (1 - Math.pow(1 - Math.min(1, Math.max(0, t)), 3));
-  return isFinite(n) && n > 0 ? raw.replace(/[0-9][0-9,.]*/, now.toLocaleString('en-US', {minimumFractionDigits: dec, maximumFractionDigits: dec})) : raw;
+  const m = raw.match(NUM);
+  const n = m ? parseFloat(m[0].replace(/,/g, '')) : NaN;
+  if (!m || !isFinite(n) || n <= 0) return raw;
+  const dec = (m[1] ?? '').length;
+  const now = n * Math.min(1, Math.max(0, t));
+  return raw.replace(m[0], now.toLocaleString('en-US', {minimumFractionDigits: dec, maximumFractionDigits: dec}));
 };
 
 // "Fill your *calendar*" -> the starred words in the accent colour.

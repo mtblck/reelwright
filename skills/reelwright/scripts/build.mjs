@@ -207,6 +207,11 @@ const total = scenes.at(-1).start + scenes.at(-1).dur;
 // terminal: a transcript recorded by term.mjs; code: lines read from a file in the repo
 for (const s of scenes) {
   if (s.type === 'terminal' && s.props.transcript) Object.assign(s.props, JSON.parse(fs.readFileSync(path.resolve(run, s.props.transcript), 'utf8')), {...s.props, transcript: undefined});
+  if (s.type === 'chart') {
+    const d = s.props.data;
+    if (!Array.isArray(d) || d.length < 2 || d.length > 8) throw new Error(`chart scene: data needs 2 to 8 {"label", "value"} points (has ${Array.isArray(d) ? d.length : 'none'})`);
+    for (const p of d) if (typeof p.value === 'number' ? p.value < 0 : /(^|[^0-9])[-−]\s*[0-9.]/.test(String(p.value)) || !/[0-9]/.test(String(p.value))) throw new Error(`chart scene: "${p.label}" has value ${JSON.stringify(p.value)}; values are numbers of zero or more (bars start from zero), e.g. 12 or "1.3 s"`);
+  }
   if (s.type === 'code' && s.props.file) {
     const all = fs.readFileSync(path.resolve(run, s.props.file), 'utf8').split('\n');
     const [a, z] = s.props.lines ?? [1, all.length];
@@ -263,7 +268,7 @@ for (const s of scenes) {
   if (s.type === 'features') s.cues.slice(1).forEach((c) => add('tick', s.start + c, 0.45));
   if (s.type === 'steps') s.cues.slice(s.props.title ? 1 : 0).forEach((c) => add('tick', s.start + c, 0.45));
   if (s.type === 'stat') add('rise', s.start + s.cues[0], 0.4);
-  if (s.type === 'chart') s.cues.slice(0, (s.props.data ?? []).length).forEach((c) => add('tick', s.start + c, 0.15));
+  if (s.type === 'chart') s.cues.slice(0, Math.min(8, (s.props.data ?? []).length)).forEach((c) => add('tick', s.start + c, 0.15));
   // a cursor clicks each target 20 frames after its phrase starts (CLICK_AT in product.tsx)
   (s.props.cursor ?? []).forEach((pt, k) => { if (pt && k < s.cues.length) add('click', s.start + s.cues[k] + 20, 0.5); });
   // a sub drop under the title, a riser into a reframe (ending on its cut), a hit on a stinger

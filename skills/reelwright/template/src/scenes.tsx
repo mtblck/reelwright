@@ -226,7 +226,7 @@ export const Stat: React.FC<P> = ({scene, c}) => {
   const frame = useCurrentFrame();
   const raw: string = String(scene.props.value);
   const t = interpolate(frame, [cue(scene), cue(scene) + 26], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
-  const shown = countUp(raw, t);
+  const shown = countUp(raw, 1 - Math.pow(1 - t, 3));
   const l = usePop(cue(scene, 1));
   const look = useLook();
   if (look.text === 'type')

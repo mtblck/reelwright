@@ -101,7 +101,7 @@ brand and a way in: `cut`, `slide`, `fade`, `zoom`, `splice`, `push`, `mask`, `w
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset=".github/readme/scenes-dark.webp" />
-    <img src=".github/readme/scenes-light.webp" alt="Nineteen stills, one for each move: statement, title, steps, screen, features, kinetic, reframe, the splice transition, end, terminal, code, stat, zoom-pan (a screenshot up close with a cursor on a button), before-after (a light and dark page), quote, compare (by hand against with Reelwright), logo-wall, diagram (repo, Reelwright, three cuts) and chart (render time as bars, Reelwright's in orange)" width="880" />
+    <img src=".github/readme/scenes-light.webp" alt="Nineteen stills, one for each move: statement, title, steps, screen, features, kinetic, reframe, the splice transition, end, terminal, code, stat, zoom-pan (a screenshot up close with a cursor on a button), before-after (a light and dark page), quote, compare (by hand against with Reelwright), logo-wall, diagram (repo, Reelwright, three cuts) and chart (scene types per release from the changelog, the newest in orange)" width="880" />
   </picture>
 </p>
 

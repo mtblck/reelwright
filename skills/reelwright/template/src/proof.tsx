@@ -1,7 +1,7 @@
 import React from 'react';
 import {AbsoluteFill, Easing, Img, OffthreadVideo, interpolate, useCurrentFrame} from 'remotion';
 import type {Scene} from './types';
-import {Emph, asset, countUp, font, mix, rise, sceneColors, ts, useBrand, useLayout, usePop} from './ui';
+import {Emph, NUM, asset, countUp, font, mix, rise, sceneColors, ts, useBrand, useLayout, usePop} from './ui';
 import {Typed, Words} from './scenes';
 import {useLook} from './looks';
 
@@ -218,9 +218,10 @@ const Arrow: React.FC<{at: number; across: boolean; len: number; c: C}> = ({at, 
 // kind? ('bar' default, or 'line'), title?, highlight? (index in the accent; default the largest), source?}
 // reveals: 1 the title and the first group; the bars or points come in one group per phrase
 type Datum = {label: string; value: string | number};
+// the number in a value; below zero counts as zero (build.mjs refuses negative values)
 const num = (v: string | number) => {
-  const n = parseFloat(String(v).replace(/,/g, '').match(/[0-9]*\.?[0-9]+/)?.[0] ?? '');
-  return isFinite(n) ? n : 0;
+  const n = typeof v === 'number' ? v : parseFloat(String(v).match(NUM)?.[0].replace(/,/g, '') ?? '');
+  return isFinite(n) ? Math.max(0, n) : 0;
 };
 export const Chart: React.FC<P> = ({scene, c}) => {
   const b = useBrand();
@@ -231,7 +232,8 @@ export const Chart: React.FC<P> = ({scene, c}) => {
   const n = Math.max(1, data.length);
   const vals = data.map((d) => num(d.value));
   const max = Math.max(...vals, 0) || 1;
-  const hot: number = scene.props.highlight ?? vals.lastIndexOf(Math.max(...vals));
+  const want = Number(scene.props.highlight ?? NaN);
+  const hot = Number.isInteger(want) && want >= 0 && want < data.length ? want : vals.lastIndexOf(Math.max(...vals));
   // one group per phrase, as even as they can be; inside a group each bar or point follows the last by 5 frames
   const groups = Math.max(1, Math.min(scene.cues.length, n));
   const at = (i: number) => {
@@ -268,10 +270,16 @@ export const Chart: React.FC<P> = ({scene, c}) => {
 
   const pad = (vertical ? 70 : landscape ? 150 : 90) * u;
   const W = Math.min(width - 2 * pad, (landscape ? 1500 : 940) * u);
-  const H = (vertical ? 760 : landscape ? 480 : 400 + tall * 0.8) * u;
   // burned-in captions sit low in the frame (a quarter up in the vertical cut): keep the chart above them
   const under = Math.max(pad, height * (vertical ? 0.3 : 0.15));
   const slot = W / n;
+  const ls = (n <= 4 ? 34 : 28) * (vertical ? 1.1 : 1) * u; // label size
+  // the plot takes what's left after the title (one or two lines), the labels and the source, up to its design height
+  const tw = Math.min(1400 * u, width - 2 * pad);
+  const titleH = title ? Math.ceil((title.replace(/\*/g, '').length * 76 * u * 0.5) / tw) * 76 * 1.05 * u + 50 * u : 0;
+  const labelH = 20 * u + (data.some((d) => String(d.label).length * ls * 0.5 > slot) ? 2 : 1) * ls * 1.2;
+  const sourceH = scene.props.source ? 50 * u + 34 * u : 0;
+  const H = Math.max(200 * u, Math.min((vertical ? 760 : landscape ? 480 : 400 + tall * 0.8) * u, height - pad - under - titleH - labelH - sourceH));
   const vs = (n <= 4 ? 46 : n <= 6 ? 40 : 34) * (vertical ? 1.1 : 1) * u; // value size
   const top = H - vs * 1.7; // the tallest bar or point, with room for its value over it
   const x = (i: number) => slot * (i + 0.5);
@@ -328,7 +336,7 @@ export const Chart: React.FC<P> = ({scene, c}) => {
         </div>
         <div style={{display: 'flex', marginTop: 20 * u}}>
           {data.map((d, i) => (
-            <div key={i} style={{...font(b.text), width: slot, padding: `0 ${6 * u}px`, boxSizing: 'border-box', textAlign: 'center', fontSize: ts((n <= 4 ? 34 : 28) * (vertical ? 1.1 : 1) * u), lineHeight: 1.2, fontWeight: i === hot ? 700 : 500, color: i === hot ? c.ink : c.quiet, opacity: Math.min(1, grow(i) * 3)}}>{d.label}</div>
+            <div key={i} style={{...font(b.text), width: slot, padding: `0 ${6 * u}px`, boxSizing: 'border-box', textAlign: 'center', fontSize: ts(ls), lineHeight: 1.2, fontWeight: i === hot ? 700 : 500, color: i === hot ? c.ink : c.quiet, opacity: Math.min(1, grow(i) * 3)}}>{d.label}</div>
           ))}
         </div>
       </div>
