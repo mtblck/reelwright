@@ -2,7 +2,7 @@
 // Usage:
 //   node render.mjs <run_dir> stills [--format square] [--safe tiktok|reels|shorts]     one frame per scene -> <run>/stills/sheet.png
 //     --safe shades where that app's buttons and text cover a vertical video (approximate, 1080 x 1920)
-//   node render.mjs <run_dir> overlay [--format landscape] [--scene n | n-m] [--muted]   over transparency, for
+//   node render.mjs <run_dir> overlay [--formats landscape,vertical] [--scene n | n-m] [--muted]   over transparency, for
 //     another edit: <name>-overlay-<format>.mov (ProRes 4444) and .webm (VP9), both with alpha
 //   node render.mjs <run_dir> loop [--format landscape] [--seconds 5] [--scene n | --from <s>]   a silent seamless loop
 //     -> <name>-loop.mp4, .webm and .gif (under 5 MB), for a README or landing page
@@ -120,8 +120,9 @@ if (args[1] === 'check') {
 if (args[1] === 'overlay') {
   // The video over transparency, to drop into another edit: no backgrounds and none of the look's layers, only
   // the words, devices, cards and mark. ProRes 4444 MOV (for Premiere, Final Cut, Resolve) and VP9 WebM (for the web),
-  // both with alpha. --scene 1 or --scene 1-2 renders just those scenes; --muted leaves the sound out.
-  const fmt = opt('--format', 'landscape');
+  // both with alpha, the sound at -14 LUFS like the other cuts. --scene 1 or --scene 1-2 renders just those scenes;
+  // --muted leaves the sound out.
+  const fmts = String(opt('--formats', opt('--format', 'landscape'))).split(',').map((s) => s.trim()).filter(Boolean);
   let range = '';
   if (args.includes('--scene')) {
     const [a, z = a] = String(opt('--scene')).split('-').map(Number);
@@ -129,15 +130,34 @@ if (args[1] === 'overlay') {
     if (!sa || !sz || z < a) throw new Error(`--scene is 1 to ${props.scenes.length}, or a range like 1-2`);
     range = `${sa.start}-${Math.min(props.durationInFrames - 1, sz.start + sz.dur - 1)}`;
   }
+  const muted = args.includes('--muted');
   const pf = path.join(run, '.props-overlay.json');
   fs.writeFileSync(pf, JSON.stringify({...props, overlay: true}));
-  const base = path.join(run, `${slug}-overlay-${fmt}${range ? `-${String(opt('--scene'))}` : ''}`);
-  const alpha = (file, codec) => execFileSync('npx', ['remotion', 'render', bundle, fmt, file, `--props=${pf}`, '--image-format=png', '--log=error', ...codec,
-    ...(range ? [`--frames=${range}`] : []), ...(args.includes('--muted') ? ['--muted'] : []), ...(env.BROWSER ? [`--browser-executable=${env.BROWSER}`] : [])], {cwd: env.TEMPLATE, stdio: ['ignore', 'inherit', 'inherit']});
-  alpha(`${base}.mov`, ['--codec=prores', '--prores-profile=4444', '--pixel-format=yuva444p10le']);
-  alpha(`${base}.webm`, ['--codec=vp9', '--pixel-format=yuva420p']);
-  fs.rmSync(pf);
-  for (const ext of ['mov', 'webm']) console.log(`${base}.${ext}  (${(fs.statSync(`${base}.${ext}`).size / 1e6).toFixed(1)} MB)`);
+  try {
+    for (const fmt of fmts) {
+      const base = path.join(run, `${slug}-overlay-${fmt}${range ? `-${String(opt('--scene'))}` : ''}`);
+      const alpha = (file, codec) => execFileSync('npx', ['remotion', 'render', bundle, fmt, file, `--props=${pf}`, '--image-format=png', '--log=error', ...codec,
+        ...(range ? [`--frames=${range}`] : []), ...(muted ? ['--muted'] : []), ...(env.BROWSER ? [`--browser-executable=${env.BROWSER}`] : [])], {cwd: env.TEMPLATE, stdio: ['ignore', 'inherit', 'inherit']});
+      const mov = path.join(run, '.overlay-raw.mov');
+      alpha(mov, ['--codec=prores', '--prores-profile=4444', '--pixel-format=yuva444p10le']);
+      alpha(`${base}.webm`, ['--codec=vp9', '--pixel-format=yuva420p', '--muted']);
+      if (muted) fs.renameSync(mov, `${base}.mov`);
+      else {
+        // the sound to -14 LUFS (as the other cuts), into the MOV as PCM and the WebM as Opus; the pictures are copied
+        const af = loudnorm(mov);
+        ff('-i', mov, '-c:v', 'copy', '-af', af, '-ar', '48000', '-c:a', 'pcm_s16le', `${base}.mov`);
+        const silent = `${base}.silent.webm`;
+        fs.renameSync(`${base}.webm`, silent);
+        ff('-c:v', 'libvpx-vp9', '-i', silent, '-i', `${base}.mov`, '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'libopus', '-b:a', '160k', `${base}.webm`);
+        fs.rmSync(silent);
+        fs.rmSync(mov);
+      }
+      for (const ext of ['mov', 'webm']) console.log(`${base}.${ext}  (${(fs.statSync(`${base}.${ext}`).size / 1e6).toFixed(1)} MB)`);
+    }
+  } finally {
+    fs.rmSync(pf, {force: true});
+    fs.rmSync(path.join(run, '.overlay-raw.mov'), {force: true});
+  }
   process.exit(0);
 }
 
@@ -209,8 +229,7 @@ for (const fmt of formats) {
   outs.push({fmt, raw, out});
 }
 for (const {fmt, raw, out} of outs) {
-  const stats = measure(raw);
-  const af = stats ? `loudnorm=I=-14:TP=-1.5:LRA=11:measured_I=${stats.input_i}:measured_TP=${stats.input_tp}:measured_LRA=${stats.input_lra}:measured_thresh=${stats.input_thresh}:offset=${stats.target_offset}:linear=true` : 'loudnorm=I=-14:TP=-1.5:LRA=11';
+  const af = loudnorm(raw);
   if (STORE[fmt]) {
     // constant 11 Mbps (Apple asks 10 to 12), and a silent stereo track when the video has no sound: a preview needs one
     const sound = spawnSync('ffprobe', ['-v', 'error', '-select_streams', 'a', '-show_entries', 'stream=index', '-of', 'csv=p=0', raw], {encoding: 'utf8'}).stdout.trim();
@@ -401,6 +420,12 @@ function subs(base) {
   const cues = props.subtitles.map((c) => [stamp(c.from, ','), stamp(c.to, ','), wrap(safe(c.text))]);
   fs.writeFileSync(`${base}.srt`, cues.map(([a, b, t], i) => `${i + 1}\n${a} --> ${b}\n${t}\n`).join('\n'));
   fs.writeFileSync(`${base}.vtt`, 'WEBVTT\n\n' + cues.map(([a, b, t]) => `${a.replace(',', '.')} --> ${b.replace(',', '.')}\n${vtt(t)}\n`).join('\n'));
+}
+
+// the second loudnorm pass's filter for a file: -14 LUFS, from what the first pass measured
+function loudnorm(file) {
+  const stats = measure(file);
+  return stats ? `loudnorm=I=-14:TP=-1.5:LRA=11:measured_I=${stats.input_i}:measured_TP=${stats.input_tp}:measured_LRA=${stats.input_lra}:measured_thresh=${stats.input_thresh}:offset=${stats.target_offset}:linear=true` : 'loudnorm=I=-14:TP=-1.5:LRA=11';
 }
 
 // first loudnorm pass: what the mix measures, so the second pass lands on target

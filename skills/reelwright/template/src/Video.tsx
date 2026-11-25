@@ -1,7 +1,7 @@
 import React from 'react';
 import {AbsoluteFill, Audio, Sequence, interpolate, useCurrentFrame} from 'remotion';
 import type {Props} from './types';
-import {BrandContext, asset, readable, sceneColors, setFallback, setOverlay, setTypeScale, useFonts} from './ui';
+import {BrandContext, OverlayContext, asset, readable, sceneColors, setFallback, setTypeScale, useFonts} from './ui';
 import {OVERLAP, Transitioned} from './transitions';
 import {SCENES} from './scenes';
 import {DEV_SCENES} from './devscenes';
@@ -16,7 +16,6 @@ export const Video: React.FC<Props> = (p) => {
   useFonts(p.brand);
   setTypeScale(p.brand.typeScale);
   setFallback(p.brand.fallback);
-  setOverlay(!!p.overlay);
   const frame = useCurrentFrame();
   // music ducks to a third while the voice speaks, with a short ramp either side
   const duck = (f: number) => {
@@ -32,10 +31,12 @@ export const Video: React.FC<Props> = (p) => {
   // only what sits on them (text, devices, cards, the mark), over transparency
   const bare = p.quiet || p.overlay;
   const Wrap = (!bare && look.Wrap) || React.Fragment;
-  // a match cut dips through the scenes' colours, which overlay leaves out: it fades instead
-  const scenes = p.overlay ? p.scenes.map((s) => (s.enter === 'match' ? {...s, enter: 'fade'} : s)) : p.scenes;
+  // ways in that paint across the frame (a match cut's dip through the colours, splice's bar, mask's edge) fade
+  // instead in an overlay
+  const scenes = p.overlay ? p.scenes.map((s) => (['match', 'splice', 'mask'].includes(s.enter) ? {...s, enter: 'fade'} : s)) : p.scenes;
   return (
     <BrandContext.Provider value={p.brand}>
+      <OverlayContext.Provider value={!!p.overlay}>
       <LookContext.Provider value={look}>
       <AbsoluteFill style={{background: p.overlay ? 'transparent' : p.brand.paper}}>
         <Wrap>
@@ -45,8 +46,9 @@ export const Video: React.FC<Props> = (p) => {
           // the accent, lightened only as far as it takes to read at 3:1 on this scene's background (WCAG for large text and shapes)
           const accent = readable(p.brand.accent, c.bg, p.brand.paper);
           const brand = accent === p.brand.accent ? p.brand : {...p.brand, accent};
+          // an overlay has no next background to cover the old scene: it ends at the cut, unless the way in moves it off
           return (
-            <Sequence key={i} from={s.start} durationInFrames={s.dur + (i < scenes.length - 1 ? OVERLAP : 0)} name={`${i + 1} ${s.type}`}>
+            <Sequence key={i} from={s.start} durationInFrames={s.dur + (i < scenes.length - 1 && (!p.overlay || ['push', 'whip'].includes(scenes[i + 1].enter)) ? OVERLAP : 0)} name={`${i + 1} ${s.type}`}>
               <Transitioned scene={s} next={scenes[i + 1]}>
                 <BrandContext.Provider value={brand}>
                 <AbsoluteFill data-scene={i} style={{background: p.overlay ? undefined : c.bg, textTransform: look.upper ? 'uppercase' : undefined}}>{look.Back && !p.overlay && <look.Back index={i} bg={c.bg} brand={brand} />}{Comp ? <Comp scene={s} c={c} /> : null}{look.Front && !p.overlay && <look.Front index={i} bg={c.bg} brand={brand} />}</AbsoluteFill>
@@ -73,6 +75,7 @@ export const Video: React.FC<Props> = (p) => {
         ))}
       </AbsoluteFill>
       </LookContext.Provider>
+      </OverlayContext.Provider>
     </BrandContext.Provider>
   );
 };
