@@ -16,7 +16,7 @@ export const Captions: React.FC<{captions: C}> = ({captions}) => {
   if (!line) return null;
   const u = Math.min(width, height) / 1080;
   const vertical = id === 'vertical';
-  const size = ts((vertical ? 54 : id === 'square' ? 46 : 44) * u);
+  const size = ts((vertical ? 54 : id === 'square' || id === 'portrait' ? 46 : 44) * u);
   const bottom = height * (vertical ? 0.26 : 0.09);
   const p = interpolate(frame - line.from, [0, 4], [0, 1], {extrapolateRight: 'clamp'});
   const fade = interpolate(frame, [line.to - 3, line.to], [1, 0], {extrapolateLeft: 'clamp'});

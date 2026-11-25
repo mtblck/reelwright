@@ -334,8 +334,8 @@ for (const ln of lines4captions) {
 }
 // each line stays up until the next one, or a beat after its last word
 captionLines.forEach((c, k) => { const next = captionLines[k + 1]; c.to = Math.min(c.to + 8, next ? next.from : Infinity); });
-// on by default for the vertical and square cuts (mostly watched muted in feeds), off for landscape
-const captions = story.captions === false ? null : {formats: story.captions === true ? ['vertical', 'square', 'landscape'] : Array.isArray(story.captions) ? story.captions : ['vertical', 'square'], lines: captionLines};
+// on by default for the vertical, portrait and square cuts (mostly watched muted in feeds), off for landscape
+const captions = story.captions === false ? null : {formats: story.captions === true ? ['vertical', 'portrait', 'square', 'landscape'] : Array.isArray(story.captions) ? story.captions : ['vertical', 'portrait', 'square'], lines: captionLines};
 
 // subtitle cues for .srt/.vtt: each phrase as written (no pronounce respellings, no stars), split at
 // punctuation into cues of at most two 42-character lines

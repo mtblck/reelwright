@@ -9,11 +9,13 @@ export const useBrand = () => useContext(BrandContext)!;
 export const asset = (p?: string) => (!p ? '' : /^(https?:|data:)/.test(p) ? p : staticFile(p));
 
 // Layout: one unit = 1/1080 of the short side, so a design works at 1080x1080, 1080x1920 and 1920x1080.
+// 1080x1350 (portrait, 4:5) lays out as square; `tall` is the extra height it has, for scenes that can use it.
 export const useLayout = () => {
   const {width, height} = useVideoConfig();
   const u = Math.min(width, height) / 1080;
-  const shape = height > width * 1.2 ? 'vertical' : width > height * 1.2 ? 'landscape' : 'square';
-  return {width, height, u, shape, vertical: shape === 'vertical', landscape: shape === 'landscape'};
+  const shape = height > width * 1.5 ? 'vertical' : width > height * 1.2 ? 'landscape' : 'square';
+  const tall = shape === 'square' ? Math.max(0, height - width) / u : 0;
+  return {width, height, u, shape, tall, vertical: shape === 'vertical', landscape: shape === 'landscape'};
 };
 
 export const sceneColors = (b: Brand, bg: Scene['bg']) =>

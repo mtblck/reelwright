@@ -34,7 +34,7 @@ export const TRANSITIONS: Record<string, Transition> = {
   },
   // mask: the new scene opens up through a shape that grows from the centre until it fills the frame.
   // opts.shape: 'mark' (the brand's own mark, default; iris when there's no mark), 'frame' (an aspect
-  // frame, opts.aspect '9:16' default, '1:1' or '16:9', edged in the accent) or 'iris' (a circle).
+  // frame, opts.aspect '9:16' default, '4:5', '1:1' or '16:9', edged in the accent) or 'iris' (a circle).
   // The old scene pushes in a little and darkens underneath.
   mask: {
     len: 18,

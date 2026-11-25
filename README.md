@@ -60,9 +60,11 @@ Every scene is laid out for each shape, not cropped from one, so the same story 
 | --- | --- | --- |
 | `<name>-vertical.mp4` | 1080 × 1920 | Reels, Shorts, TikTok, Stories |
 | `<name>-square.mp4` | 1080 × 1080 | Feeds on X, LinkedIn, Instagram |
+| `<name>-portrait.mp4` | 1080 × 1350 | Instagram and LinkedIn feeds (4:5, with `--formats portrait`) |
 | `<name>-landscape.mp4` | 1920 × 1080 | Websites, YouTube, slides |
-| `<name>.gif` | 540 × 540 | READMEs and docs |
-| `<name>-poster.png` | 1080 × 1080 | Video player poster and thumbnails |
+| `<name>.gif` | 540 wide | READMEs and docs (made from the first format in `--formats`) |
+| `<name>-<format>.srt`, `.vtt` | Text | Subtitles to upload with each cut |
+| `<name>-poster.png` | Size of the first format | Video player poster and thumbnails |
 
 Every video is mixed to -14 LUFS, the loudness the social platforms play at.
 
