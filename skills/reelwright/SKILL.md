@@ -53,6 +53,7 @@ Write `<run>/story.json` from a template in `references/story.md` (app launch, f
 - **`say` is a list of phrases.** Each phrase is voiced on its own and starts the scene's next reveal: the title's name on phrase 1 and tagline on phrase 2, each feature item on its own phrase, the end button press on phrase 2. Count reveals against phrases (`references/story.md` lists them per scene).
 - **On-screen text is shorter than the voice.** The screen says "Every edge is traced *once*." while the voice says the whole sentence. Mark one or two words per scene with `*stars*` for the accent colour.
 - **Pronunciation:** add `voice.pronounce` for names, acronyms and URLs ("SVG": "S V G", "inlaytrace.com": "inlay trace dot com"). On-screen text is unchanged.
+- **Language:** if the person wants the video in another language, set `voice.lang` (`es`, `fr`, `it`, `pt-br`, `hi`, `ja`, `zh`) and write every line in it. If they'd rather use their own voice, ask them to record one file per phrase and set `voice.files` (story reference: Languages and recordings).
 - Alternate `bg` between `dark` and `paper` so cuts read as cuts; use `brand` for one moment at most.
 
 ### 3. Build

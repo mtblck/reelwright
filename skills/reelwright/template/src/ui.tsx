@@ -93,7 +93,10 @@ export const useFonts = (b: Brand) => {
     l.rel = 'stylesheet';
     l.href = staticFile(b.fontCss);
     const done = () => continueRender(handle);
-    l.onload = () => Promise.all([b.display, b.text].map((f) => document.fonts.load(`${f.weight} 40px "${f.family}"`))).then(done, done);
+    // a fallback face loads only for the letters it covers: ask for one of its own
+    const SAMPLE: Record<string, string> = {'Noto Sans JP': 'あ', 'Noto Sans SC': '中', 'Noto Sans KR': '한', 'Noto Sans Devanagari': 'क'};
+    const extra = (b.fallback ?? []).flatMap((fam) => [400, 700].map((w) => document.fonts.load(`${w} 40px "${fam}"`, SAMPLE[fam] ?? 'a')));
+    l.onload = () => Promise.all([...[b.display, b.text].map((f) => document.fonts.load(`${f.weight} 40px "${f.family}"`)), ...extra]).then(done, done);
     l.onerror = done; // missing fonts: fall back to system fonts rather than hang
     document.head.appendChild(l);
   }, []);
@@ -105,4 +108,6 @@ let typeScale = 1;
 export const setTypeScale = (k = 1) => { typeScale = k; };
 export const ts = (px: number) => px * typeScale;
 
-export const font = (f: {family: string; weight: number}) => ({fontFamily: `"${f.family}", system-ui, sans-serif`, fontWeight: f.weight});
+let fallback = '';
+export const setFallback = (fams: string[] = []) => { fallback = fams.map((f) => `"${f}", `).join(''); };
+export const font = (f: {family: string; weight: number}) => ({fontFamily: `"${f.family}", ${fallback}system-ui, sans-serif`, fontWeight: f.weight});

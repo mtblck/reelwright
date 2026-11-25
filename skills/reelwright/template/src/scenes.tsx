@@ -51,6 +51,28 @@ const Cursor: React.FC<{color: string}> = ({color}) => (
   </span>
 );
 
+// "Fill your *calendar*." -> words, each with whether it's starred (hot) and whether a space follows (gap).
+// Japanese and Chinese have no spaces, so a run of them is one word, split where a star starts or ends.
+const CJK = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/;
+export const wordsOf = (text: string) => {
+  const out: {t: string; hot: boolean; gap: boolean}[] = [];
+  let cur = {t: '', hot: false, gap: true};
+  let star = false;
+  const push = (gap: boolean) => { if (cur.t) out.push({...cur, gap}); cur = {t: '', hot: false, gap: true}; };
+  [...text].forEach((ch, i, all) => {
+    if (ch === ' ') return push(true);
+    if (ch === '*') {
+      if (CJK.test(all[i - 1] ?? '') || CJK.test(all[i + 1] ?? '')) push(false);
+      star = !star;
+      return;
+    }
+    cur.t += ch;
+    if (star) cur.hot = true;
+  });
+  push(false);
+  return out;
+};
+
 // Big words, a word at a time from the phrase's cue (or typed on, under a look that types).
 export const Words: React.FC<{text: string; at: number; size: number; color: string; accent: string; align?: 'left' | 'center'; step?: number}> = ({text, at, size, color, accent, align = 'center', step = 3}) => {
   const b = useBrand();
@@ -58,18 +80,13 @@ export const Words: React.FC<{text: string; at: number; size: number; color: str
   const look = useLook();
   if (look.text === 'type')
     return <div style={{...font(b.display), fontSize: ts(size), lineHeight: 1.12, letterSpacing: -0.01 * ts(size), textAlign: align, textWrap: 'balance' as any}}><Typed text={text} at={at} color={color} accent={accent} /></div>;
-  const words = text.split(' ');
-  let star = false;
+  const words = wordsOf(text);
   return (
     <div style={{...font(b.display), fontSize: ts(size), lineHeight: 1.08, letterSpacing: -0.02 * ts(size), color, textAlign: align, textWrap: 'balance' as any}}>
-      {words.map((w, i) => {
-        const open = w.startsWith('*');
-        const close = w.replace(/[.,!?:;]+$/, '').endsWith('*');
-        const hot = star || open;
-        star = open ? !close : star && !close;
+      {words.map(({t: w, hot, gap}, i) => {
         const p = interpolate(frame, [at + i * step, at + i * step + 7], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
         const m = look.marker && hot ? interpolate(frame, [at + i * step + 6, at + i * step + 16], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}) : 0;
-        return <span key={i} style={{display: 'inline-block', marginRight: '0.24em', opacity: p, transform: `translateY(${(1 - p) * 0.25}em)`, color: hot ? accent : color}}>{look.marker && hot ? <Scribble color={accent} p={m}>{w.replace(/\*/g, '')}</Scribble> : w.replace(/\*/g, '')}</span>;
+        return <span key={i} style={{display: 'inline-block', marginRight: gap ? '0.24em' : 0, opacity: p, transform: `translateY(${(1 - p) * 0.25}em)`, color: hot ? accent : color}}>{look.marker && hot ? <Scribble color={accent} p={m}>{w}</Scribble> : w}</span>;
       })}
     </div>
   );
