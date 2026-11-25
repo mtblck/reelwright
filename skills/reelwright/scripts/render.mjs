@@ -25,6 +25,9 @@ if (!args[0] || !fs.existsSync(propsFile)) {
   process.exit(1);
 }
 const opt = (k, d) => (args.includes(k) ? args[args.indexOf(k) + 1] : d);
+// the compositions in template/src/Root.tsx, checked before the slow bundle step
+const FORMATS = ['square', 'vertical', 'portrait', 'landscape'];
+for (const f of [...String(opt('--formats', '')).split(','), opt('--format', '')].map((x) => x.trim()).filter(Boolean)) if (!FORMATS.includes(f)) { console.error(`no format "${f}": use ${FORMATS.join(', ')}`); process.exit(1); }
 const env = Object.fromEntries(
   execFileSync('bash', [path.join(SKILL, 'scripts/setup.sh')], {encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit']})
     .trim().split('\n').filter((l) => l.includes('=')).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]),
@@ -126,8 +129,6 @@ if (args[1] === 'loop') {
 }
 
 const formats = opt('--formats', 'square,vertical').split(',').map((s) => s.trim()).filter(Boolean);
-const FORMATS = ['square', 'vertical', 'portrait', 'landscape']; // the compositions in template/src/Root.tsx
-for (const f of formats) if (!FORMATS.includes(f)) throw new Error(`no format "${f}": use ${FORMATS.join(', ')}`);
 const outs = [];
 for (const fmt of formats) {
   const raw = path.join(run, `.raw-${fmt}.mp4`);
