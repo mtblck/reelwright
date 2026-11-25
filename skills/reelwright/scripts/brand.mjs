@@ -26,7 +26,13 @@ const {chromium} = playwright();
 const browser = await chromium.launch();
 const ctx = await browser.newContext({viewport: {width: 1280, height: 800}, deviceScaleFactor: 2, colorScheme: 'light'});
 const page = await ctx.newPage();
-await page.goto(url, {waitUntil: 'networkidle', timeout: 60000}).catch(() => page.waitForLoadState('load'));
+// a page that never goes quiet is fine once it has loaded; one that can't be reached is not
+const loaded = await page.goto(url, {waitUntil: 'networkidle', timeout: 60000}).then(() => null, (e) => (/Timeout/i.test(e.name + e.message) ? page.waitForLoadState('load').then(() => null, () => e) : e));
+if (loaded || page.url() === 'about:blank') {
+  console.error(`! could not load ${url}: ${(loaded?.message ?? 'blank page').split('\n')[0]}\n  start the app (or check the URL) and run this again`);
+  await browser.close();
+  process.exit(1);
+}
 await page.waitForTimeout(800);
 
 // --- in the page: colours by where they're used, the fonts, the name, the icons and the header logo ---
@@ -36,7 +42,7 @@ const found = await page.evaluate(() => {
   const g = cv.getContext('2d', {willReadFrequently: true});
   // any CSS colour (rgb, hsl, oklch, lab, named) -> #rrggbb, or null when missing or mostly transparent
   const hex = (c) => {
-    if (!c || c === 'transparent' || c === 'none') return null;
+    if (!c || c === 'transparent' || c === 'none' || !CSS.supports('color', c)) return null; // url(#gradient) and the like aren't colours
     g.clearRect(0, 0, 1, 1);
     g.fillStyle = '#000';
     g.fillStyle = c;
@@ -113,22 +119,41 @@ const found = await page.evaluate(() => {
     else {
       // inline SVG: copy the colours it is drawn in onto it, so it looks the same on its own
       const c = el.cloneNode(true);
-      // <use href="#id"> points into the page; copy what it points at into the logo
-      c.querySelectorAll('use').forEach((u) => {
-        const ref = document.querySelector((u.getAttribute('href') || u.getAttribute('xlink:href') || '').replace(/^[^#]*/, '') || ':not(*)');
+      const fills = {};
+      // first the colours, while the clone still matches the original element for element
+      const bake = (s, d, count) => {
+        const st = css(s);
+        if (st.fill && st.fill !== 'none') { const f = hex(st.fill); if (f) { d.setAttribute('fill', f); if (count && /^(path|rect|circle|polygon|ellipse|text)$/i.test(s.tagName)) fills[f] = (fills[f] || 0) + 1; } }
+        if (st.stroke && st.stroke !== 'none') { const f = hex(st.stroke); if (f) d.setAttribute('stroke', f); }
+      };
+      const src = [el, ...el.querySelectorAll('*')], dst = [c, ...c.querySelectorAll('*')];
+      src.forEach((s, i) => dst[i] && bake(s, dst[i], true));
+      // then each <use href="#id"> becomes a copy of what it points at, drawn in the <use>'s colours
+      dst.forEach((u, i) => {
+        if (u.tagName.toLowerCase() !== 'use') return;
+        const id = (u.getAttribute('href') || u.getAttribute('xlink:href') || '').split('#')[1];
+        const ref = id ? document.getElementById(id) : null;
         if (!ref) return;
         const gEl = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        for (const a of ['fill', 'stroke', 'transform']) if (u.getAttribute(a)) gEl.setAttribute(a, u.getAttribute(a));
+        const x = +u.getAttribute('x') || 0, y = +u.getAttribute('y') || 0;
+        if (x || y) gEl.setAttribute('transform', `translate(${x} ${y}) ${gEl.getAttribute('transform') ?? ''}`.trim());
         for (const ch of ref.childNodes) gEl.appendChild(ch.cloneNode(true));
+        // only colours the symbol sets itself; the rest inherit the <use>'s
+        gEl.querySelectorAll('*').forEach((d) => { if (!d.getAttribute('fill') && !d.style?.fill) d.removeAttribute('fill'); });
+        const f = hex(css(src[i]).fill);
+        if (f) fills[f] = (fills[f] || 0) + 1;
         u.replaceWith(gEl);
       });
-      const src = [el, ...el.querySelectorAll('*')], dst = [c, ...c.querySelectorAll('*')];
-      const fills = {};
-      src.forEach((s, i) => {
-        if (!dst[i]) return;
-        const st = css(s);
-        if (st.fill && st.fill !== 'none') { const f = hex(st.fill); if (f) { dst[i].setAttribute('fill', f); if (/^(path|rect|circle|polygon|ellipse|text)$/i.test(s.tagName)) fills[f] = (fills[f] || 0) + 1; } }
-        if (st.stroke && st.stroke !== 'none') dst[i].setAttribute('stroke', hex(st.stroke) ?? st.stroke);
-      });
+      // gradients, patterns and masks it points at elsewhere in the page come along in a <defs>
+      const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      const have = new Set([...c.querySelectorAll('[id]')].map((e) => e.id));
+      for (const e of [c, ...c.querySelectorAll('*')]) for (const a of ['fill', 'stroke', 'mask', 'clip-path', 'filter']) {
+        const id = (e.getAttribute(a) || '').match(/url\(\s*['"]?#([^)'"]+)/)?.[1];
+        const ref = id && !have.has(id) ? document.getElementById(id) : null;
+        if (ref) { defs.appendChild(ref.cloneNode(true)); have.add(id); }
+      }
+      if (defs.childNodes.length) c.insertBefore(defs, c.firstChild);
       c.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
       if (!c.getAttribute('viewBox')) c.setAttribute('viewBox', `0 0 ${r.width} ${r.height}`);
       c.setAttribute('width', String(Math.round(r.width)));
@@ -188,7 +213,12 @@ let ink = texts.find((c) => contrast(c, paper) >= 7) ?? texts.sort((x, y) => con
 if (darkSite) notes.push('the site is dark: its background is used as ink and dark, and its text colour as paper');
 if (contrast(ink, paper) < 4.5) { ink = lum(paper) > 0.5 ? '#141414' : '#f5f5f5'; notes.push(`ink had too little contrast on paper; using ${ink}`); }
 // a colour taken toward black (or white) until it reaches a contrast with c
-const until = (h, c, ratio, to = '#000000') => { let x = h; for (let t = 0; t < 1 && contrast(x, c) < ratio; t += 0.05) x = mixHex(h, to, t); return x; };
+const until = (h, c, ratio, to = '#000000') => {
+  let x = h;
+  for (let k = 0; k <= 20 && contrast(x, c) < ratio; k++) x = mixHex(h, to, k / 20);
+  if (contrast(x, c) < ratio) notes.push(`${h} can't reach ${ratio}:1 against ${c} even at ${to}: check the swatch`);
+  return x;
+};
 // the brand colour: a named --primary/--brand, else the most used colourful button, link or background.
 // It fills `brand` scenes under paper-coloured text, so it is darkened until that text reads on it.
 const pool = [...byName(/primary|brand/), ...ranked(found.buttons), ...ranked(found.links), ...ranked(found.bg), ...byName(/accent|secondary|highlight/)];
@@ -246,12 +276,15 @@ if (display.weight < 600) display.weight = Math.max(display.weight, 600);
 // the title's part that is in the host name ("Home page | Yarn" on yarnpkg.com), else its first part
 const parts = (found.name || '').split(/\s+[|·•–—-]\s+|:\s/).map((x) => x.trim()).filter(Boolean);
 const hostWord = new URL(url).hostname.replace(/^www\./, '').toLowerCase();
-let name = parts.find((x) => hostWord.includes(x.toLowerCase().replace(/[^a-z0-9]/g, ''))) ?? parts[0] ?? hostWord;
+let name = parts.find((x) => { const w = x.toLowerCase().replace(/[^a-z0-9]/g, ''); return w.length > 1 && hostWord.includes(w); }) ?? parts[0] ?? hostWord;
 if (name.length > 28) { name = new URL(url).hostname.replace(/^www\./, '').split('.')[0]; notes.push(`the page title is long; name = "${name}"`); }
 let tagline = found.tagline.replace(/\s+/g, ' ').trim();
 if (tagline.length > 90) tagline = tagline.split(/(?<=[.!?])\s/)[0];
 if (tagline.length > 90) tagline = '';
 const host = new URL(url).hostname.replace(/^www\./, '');
+// a dev server's address is no URL to show on an end card
+const local = /^(localhost|127\.|0\.0\.0\.0|\[?::1\]?|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)|\.local$/i.test(host);
+if (local) notes.push(`${host} is a local address: set brand.url to the public one for the end card`);
 
 // --- the mark: an SVG favicon, else the biggest square icon (app icon, manifest icon, favicon) ---
 async function fetchTo(src, base) {
@@ -321,7 +354,7 @@ if (found.logo && found.logo.w / found.logo.h >= 1.6 && isHex(found.logo.on) && 
 
 const rel = (f) => (f ? path.relative(run, f) : undefined);
 const brand = {
-  name, tagline: tagline || undefined, url: host,
+  name, tagline: tagline || undefined, url: local ? undefined : host,
   paper, ink, primary, accent, dark,
   display, text,
   mark: rel(mark),
