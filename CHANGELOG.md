@@ -39,6 +39,11 @@ version with the date and bumps `plugin.json` to match.
 - `render.mjs <run> overlay`: the video over transparency, as a ProRes 4444 MOV and a VP9 WebM, both with alpha,
   to drop a title, captions or end card into another edit. Backgrounds and the look's layers are left out; text,
   devices, cards and the mark stay. `--scene 1-2` renders just those scenes ([#73](https://github.com/mtblck/reelwright/pull/73)).
+- Match a reference's style: `reference.mjs <video file | url> <run>` makes a contact sheet of a video (or
+  screenshots of a page) someone likes and measures its pace, hard cuts against moves, tone and colour. Claude shows
+  what it will borrow, mapped onto scenes, ways in and looks, before building, and never uses the reference's
+  footage, logos, words or music: the build refuses a story that points into `reference/`
+  ([#74](https://github.com/mtblck/reelwright/pull/74)).
 - Named targets: a `box` step in capture.mjs records where an element sits on a screenshot, and `cursor` and
   `zoom-pan` `focus` can name it (`"cursor": ["Export button"]`) instead of giving coordinates
   ([#67](https://github.com/mtblck/reelwright/pull/67)).
