@@ -95,8 +95,8 @@ export const useFonts = (b: Brand) => {
     const done = () => continueRender(handle);
     // a fallback face loads only for the letters it covers: ask for one of its own
     const SAMPLE: Record<string, string> = {'Noto Sans JP': 'あ', 'Noto Sans SC': '中', 'Noto Sans KR': '한', 'Noto Sans Devanagari': 'क'};
-    const extra = (b.fallback ?? []).flatMap((fam) => [400, 700].map((w) => document.fonts.load(`${w} 40px "${fam}"`, SAMPLE[fam] ?? 'a')));
-    l.onload = () => Promise.all([...[b.display, b.text].map((f) => document.fonts.load(`${f.weight} 40px "${f.family}"`)), ...extra]).then(done, done);
+    const extra = () => (b.fallback ?? []).flatMap((fam) => [400, 700].map((w) => document.fonts.load(`${w} 40px "${fam}"`, SAMPLE[fam] ?? 'a')));
+    l.onload = () => Promise.all([...[b.display, b.text].map((f) => document.fonts.load(`${f.weight} 40px "${f.family}"`)), ...extra()]).then(done, done);
     l.onerror = done; // missing fonts: fall back to system fonts rather than hang
     document.head.appendChild(l);
   }, []);

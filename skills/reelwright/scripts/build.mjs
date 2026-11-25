@@ -5,6 +5,7 @@
 // Reads <run>/story.json. Voice clips are cached in ~/.cache/reelwright/voice, so re-running after a
 // visual-only edit is instant; changing a line re-voices only that line.
 import {execFileSync, spawnSync} from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -103,7 +104,7 @@ if (LOOKS[look].scale) brand.typeScale = LOOKS[look].scale;
 if (story.scenes.some((s) => s.type === 'terminal' || s.type === 'code')) brand.mono ??= mono ? brand.display : {family: 'JetBrains Mono', weight: 700};
 // Japanese, Chinese, Korean and Hindi text: the brand's fonts rarely have those letters, so a Noto face for
 // each script on screen goes after them, cut down to the characters the story uses
-const storyText = JSON.stringify(story.scenes);
+const storyText = JSON.stringify([story.scenes, brand.name, brand.tagline, brand.url]); // everything that reaches the screen
 const SCRIPTS = [
   [/[\u3040-\u30ff]/, 'Noto Sans JP'],
   [/[\u3400-\u4dbf\u4e00-\u9fff]/, (story.voice?.lang ?? '') === 'ja' || /[\u3040-\u30ff]/.test(storyText) ? 'Noto Sans JP' : 'Noto Sans SC'],
@@ -129,16 +130,19 @@ function fonts(list, extra = []) {
   }
   if (extra.length) {
     // only the characters the story uses (text=), so a CJK face is a few small files, not hundreds
-    const chars = [...new Set(storyText.replace(/[\x00-\x7f]/g, ''))].join('');
+    // in batches of 300 characters, so a long story's URL stays well under what Google accepts
+    const chars = [...new Set(storyText.replace(/[\x00-\x7f]/g, ''))];
     const eq = extra.map((fam) => `family=${encodeURIComponent(fam).replace(/%20/g, '+')}:wght@400;700`).join('&');
     try {
-      css += '\n' + execFileSync('curl', ['-fsSL', '--retry', '2', '-A', ua, `https://fonts.googleapis.com/css2?${eq}&display=block&text=${encodeURIComponent(chars)}`], {encoding: 'utf8'});
+      for (let k = 0; k < chars.length; k += 300)
+        css += '\n' + execFileSync('curl', ['-fsSL', '--retry', '2', '-A', ua, `https://fonts.googleapis.com/css2?${eq}&display=block&text=${encodeURIComponent(chars.slice(k, k + 300).join(''))}`], {encoding: 'utf8'});
     } catch {
       console.error(`! could not fetch ${extra.join(', ')} from Google Fonts: ${extra.length > 1 ? 'those scripts' : 'that script'} may show as boxes`);
     }
   }
   css = css.replace(/url\((https:[^)]+)\)/g, (_, url) => {
-    const name = url.split('/').slice(-2).join('-').replace(/[^\w.-]/g, '_').slice(-120);
+    // named by the whole URL: subsets of one face differ only in a long query
+    const name = crypto.createHash('sha1').update(url).digest('hex').slice(0, 20) + (url.match(/\.(woff2?|ttf|otf)(?:$|\?)/)?.[0].replace('?', '') ?? '.woff2');
     const hit = path.join(cache, name);
     if (!fs.existsSync(hit)) execFileSync('curl', ['-fsSL', '--retry', '2', '-o', hit, url]);
     fs.copyFileSync(hit, path.join(dir, name));
@@ -177,12 +181,17 @@ if (recs) {
   if (extra.length) console.error(`! voice.files: not used (no phrase for them): ${extra.join(', ')}`);
 }
 const lines = phrases.flatMap((ps, i) => ps.map((t, j) => ({id: `s${i}p${j}`, ...(recs ? {file: recording(i, j)} : {text: spoken(t), ...(quick(i, j) > 1 ? {speed: (v.speed ?? 1) * quick(i, j)} : {})})})));
-// Japanese and Mandarin need misaki to read them (about 130 MB, once)
-if (!recs && (lang === 'ja' || lang === 'zh') && spawnSync(env.PYTHON, ['-c', 'import misaki.ja, misaki.zh']).status !== 0) {
-  console.error('installing the Japanese and Mandarin reader for the voice (once, about a minute)');
-  const pkg = 'misaki[ja,zh]==0.9.4';
+// Japanese and Mandarin need misaki to read them (once; Japanese about 130 MB with its dictionary)
+if (!recs && (lang === 'ja' || lang === 'zh') && spawnSync(env.PYTHON, ['-c', `import misaki.${lang}`]).status !== 0) {
+  const name = lang === 'ja' ? 'Japanese' : 'Mandarin';
+  console.error(`installing the ${name} reader for the voice (once, about a minute)`);
+  const pkg = `misaki[${lang}]==0.9.4`;
   const uv = spawnSync('uv', ['--version']).status === 0;
-  execFileSync(uv ? 'uv' : env.PYTHON, uv ? ['pip', 'install', '-q', '--python', env.PYTHON, pkg] : ['-m', 'pip', 'install', '-q', pkg], {stdio: ['ignore', 'ignore', 'inherit']});
+  const r = spawnSync(uv ? 'uv' : env.PYTHON, uv ? ['pip', 'install', '-q', '--python', env.PYTHON, pkg] : ['-m', 'pip', 'install', '-q', pkg], {encoding: 'utf8'});
+  if (r.status !== 0) {
+    console.error(r.stderr?.trim().split('\n').slice(-6).join('\n'));
+    throw new Error(`could not install ${pkg} for the ${name} voice.${lang === 'ja' ? ' Its pyopenjtalk part builds from source where there is no ready wheel, which needs cmake and a C++ compiler (macOS: xcode-select --install; brew install cmake).' : ''} Or record your own voice: voice.files`);
+  }
 }
 const voiceDir = path.join(path.dirname(env.KOKORO_MODEL), '..', 'voice');
 const spec = path.join(run, '.lines.json');
@@ -352,13 +361,19 @@ const syllables = (w) => CJK.test(w) ? [...w].filter((ch) => CJK.test(ch)).lengt
 // with no space. Punctuation stays on the character before it.
 const CJK = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/;
 const PUNCT = /^[、。，．！？；：「」『』（）〜…・ー]$/;
+const OPEN = /^[「『（]$/;
 const tokens = (text) => text.replace(/\*/g, '').split(/\s+/).filter(Boolean).flatMap((part) => {
   if (!CJK.test(part)) return [{t: part}];
   const out = [];
+  let open = ''; // an opening bracket waits for the character after it
   for (const ch of part) {
-    if (out.length && (PUNCT.test(ch) || (!CJK.test(ch) && !CJK.test(out.at(-1).t.slice(-1))))) out.at(-1).t += ch; // punctuation, or a Latin run
-    else out.push({t: ch});
+    if (OPEN.test(ch)) { open += ch; continue; }
+    const last = out.at(-1)?.t.slice(-1) ?? '';
+    // closing punctuation stays on the character before; a Latin letter carries on a Latin run
+    if (out.length && !open && ((PUNCT.test(ch) && !OPEN.test(ch)) || (!CJK.test(ch) && !CJK.test(last) && !PUNCT.test(last)))) out.at(-1).t += ch;
+    else { out.push({t: open + ch}); open = ''; }
   }
+  if (open) out.push({t: open});
   out.forEach((w, k) => { if (k < out.length - 1) w.j = true; });
   return out;
 });
