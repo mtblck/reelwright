@@ -162,7 +162,7 @@ export const Screen: React.FC<P> = ({scene, c}) => {
     <div data-match style={{width: bw, height: bh, borderRadius: r, overflow: 'hidden', background: b.paper, border: `${2 * u}px solid ${mix(c.ink, c.bg, 0.85)}`, boxShadow: `0 ${30 * u}px ${80 * u}px #00000030`, display: 'flex', flexDirection: 'column'}}>
       <div style={{height: 56 * u, flex: 'none', display: 'flex', alignItems: 'center', gap: 12 * u, padding: `0 ${22 * u}px`, background: mix(b.ink, b.paper, 0.93)}}>
         {[0, 1, 2].map((i) => <div key={i} style={{width: 16 * u, height: 16 * u, borderRadius: 99, background: mix(b.ink, b.paper, 0.7)}} />)}
-        {scene.props.url && <div style={{...font(b.text), marginLeft: 20 * u, flex: 1, height: 34 * u, borderRadius: 99, background: b.paper, fontSize: ts(20 * u), color: mix(b.ink, b.paper, 0.45), display: 'flex', alignItems: 'center', paddingLeft: 20 * u}}>{scene.props.url}</div>}
+        {scene.props.url && <div data-check-skip style={{...font(b.text), marginLeft: 20 * u, flex: 1, height: 34 * u, borderRadius: 99, background: b.paper, fontSize: ts(20 * u), color: mix(b.ink, b.paper, 0.45), display: 'flex', alignItems: 'center', paddingLeft: 20 * u}}>{scene.props.url}</div>}
       </div>
       <div style={{flex: 1, overflow: 'hidden', position: 'relative'}}>{media}{pointer}</div>
     </div>
@@ -373,11 +373,10 @@ const ratio = (a: any) => (typeof a === 'number' ? a : (([w, h]) => w / h)(Strin
 export const Reframe: React.FC<P> = ({scene, c}) => {
   const b = useBrand();
   const {u, width, height, vertical, landscape, tall} = useLayout();
-  // square and portrait carry burned-in captions low in the frame: the label and caption sit above them,
-  // and the frames move up (lift) to make room
-  const roomy = vertical || landscape;
-  const lift = roomy ? 0 : 60 * u;
-  const textAt = (vertical ? 170 : landscape ? 70 : 200 + tall * 0.3) * u;
+  // burned-in captions sit low in the frame (a quarter up in the vertical cut, under which TikTok, Reels and
+  // Shorts put their own caption): the label and caption sit above them, and the frames move up (lift) to make room
+  const lift = landscape ? 0 : (vertical ? 280 : 60) * u;
+  const textAt = (vertical ? 620 : landscape ? 70 : 200 + tall * 0.3) * u;
   const frame = useCurrentFrame();
   const shapes: any[] = scene.props.shapes ?? [];
   const k = shapes.length;
@@ -385,7 +384,7 @@ export const Reframe: React.FC<P> = ({scene, c}) => {
   let s = 0;
   for (let i = 1; i < k; i++) s += usePop(cue(scene, i), 15) * 1;
   const lo = Math.min(k - 1, Math.floor(s)), hi = Math.min(k - 1, lo + 1), f = s - lo;
-  const area = {w: width * (vertical ? 0.84 : 0.74), h: height * (vertical ? 0.6 : landscape ? 0.62 : 0.52)};
+  const area = {w: width * (vertical ? 0.84 : 0.74), h: height * (vertical ? 0.46 : landscape ? 0.62 : 0.52)};
   const fit = (r: number) => { const w = Math.min(area.w, area.h * r); return {w, h: w / r}; };
   const A = fit(ratio(shapes[lo]?.aspect ?? 1)), B = fit(ratio(shapes[hi]?.aspect ?? 1));
   const box = {w: A.w + (B.w - A.w) * f, h: A.h + (B.h - A.h) * f};

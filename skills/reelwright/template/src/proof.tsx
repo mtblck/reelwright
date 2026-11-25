@@ -186,12 +186,12 @@ export const Diagram: React.FC<P> = ({scene, c}) => {
 };
 const Node: React.FC<{at: number; w: number; h: number; label: string; sub?: string; hot: boolean; c: C; size: number}> = ({at, w, h, label, sub, hot, c, size}) => {
   const b = useBrand();
-  const {u} = useLayout();
+  const {u, vertical} = useLayout();
   const p = usePop(at, 13);
   return (
     <div style={{width: w, minHeight: h, borderRadius: (b.radius ?? 20) * u, background: hot ? b.accent : c.card, border: `${3 * u}px solid ${hot ? b.accent : mix(c.ink, c.bg, 0.8)}`, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24 * u, boxSizing: 'border-box', textAlign: 'center', opacity: Math.min(1, p * 1.6), transform: `scale(${0.85 + 0.15 * p})`}}>
       <div style={{...font(b.display), fontSize: ts(size * u), lineHeight: 1.05, color: hot ? b.dark : c.ink}}>{label}</div>
-      {sub && <div style={{...font(b.text), fontSize: ts(28 * u), lineHeight: 1.25, marginTop: 10 * u, color: hot ? mix(b.dark, b.accent, 0.25) : c.quiet}}>{sub}</div>}
+      {sub && <div style={{...font(b.text), fontSize: ts((vertical ? 32 : 28) * u), lineHeight: 1.25, marginTop: 10 * u, color: hot ? mix(b.dark, b.accent, 0.15) : mix(c.ink, c.card, 0.2)}}>{sub}</div>}
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import React from 'react';
 import {AbsoluteFill, Audio, Sequence, interpolate, useCurrentFrame} from 'remotion';
 import type {Props} from './types';
-import {BrandContext, asset, sceneColors, setTypeScale, useFonts} from './ui';
+import {BrandContext, asset, readable, sceneColors, setTypeScale, useFonts} from './ui';
 import {OVERLAP, Transitioned} from './transitions';
 import {SCENES} from './scenes';
 import {DEV_SCENES} from './devscenes';
@@ -10,6 +10,7 @@ import {PROOF_SCENES} from './proof';
 import {LookContext, lookOf} from './looks';
 import {Captions} from './captions';
 import {MATCH_LEN, MatchLayer} from './match';
+import {Check} from './check';
 
 export const Video: React.FC<Props> = (p) => {
   useFonts(p.brand);
@@ -34,10 +35,15 @@ export const Video: React.FC<Props> = (p) => {
         {p.scenes.map((s, i) => {
           const Comp = ({...SCENES, ...DEV_SCENES, ...PRODUCT_SCENES, ...PROOF_SCENES} as any)[s.type];
           const c = sceneColors(p.brand, s.bg);
+          // the accent, lightened only as far as it takes to read at 3:1 on this scene's background (WCAG for large text and shapes)
+          const accent = readable(p.brand.accent, c.bg, p.brand.paper);
+          const brand = accent === p.brand.accent ? p.brand : {...p.brand, accent};
           return (
             <Sequence key={i} from={s.start} durationInFrames={s.dur + (i < p.scenes.length - 1 ? OVERLAP : 0)} name={`${i + 1} ${s.type}`}>
               <Transitioned scene={s} next={p.scenes[i + 1]}>
-                <AbsoluteFill data-scene={i} style={{background: c.bg, textTransform: look.upper ? 'uppercase' : undefined}}>{look.Back && <look.Back index={i} bg={c.bg} brand={p.brand} />}{Comp ? <Comp scene={s} c={c} /> : null}{look.Front && <look.Front index={i} bg={c.bg} brand={p.brand} />}</AbsoluteFill>
+                <BrandContext.Provider value={brand}>
+                <AbsoluteFill data-scene={i} style={{background: c.bg, textTransform: look.upper ? 'uppercase' : undefined}}>{look.Back && <look.Back index={i} bg={c.bg} brand={brand} />}{Comp ? <Comp scene={s} c={c} /> : null}{look.Front && <look.Front index={i} bg={c.bg} brand={brand} />}</AbsoluteFill>
+                </BrandContext.Provider>
               </Transitioned>
             </Sequence>
           );
@@ -50,6 +56,7 @@ export const Video: React.FC<Props> = (p) => {
         </Wrap>
         {p.captions && <Captions captions={p.captions} />}
         {look.Over && !p.quiet && <look.Over />}
+        {p.check && <Check />}
         {p.voice && <Audio src={asset(p.voice)} />}
         {p.music && <Audio src={asset(p.music.src)} volume={(f) => p.music!.volume * duck(f) * musicEnd(f)} />}
         {p.sfx.map((s, i) => (
