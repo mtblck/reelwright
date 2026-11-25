@@ -11,6 +11,10 @@ version with the date and bumps `plugin.json` to match.
 
 ### Added
 
+- Short cuts: `build.mjs --length 6` or `15` makes a bumper or short ad from the same story, keeping the scenes
+  marked `keep`, and `render.mjs --length` renders it. `render.mjs stills --safe tiktok` (or `reels`, `shorts`)
+  shades where the app's buttons cover a vertical video. `render.mjs loop` makes a silent seamless loop (MP4, WebM
+  and a GIF under 5 MB) for a README or landing page ([#52](https://github.com/mtblck/reelwright/pull/52)).
 - `match` way in: a match cut. The old scene's main shape (a device, window, frame, viewport or the mark) moves and
   reshapes onto the new scene's, measured from the page so it lands exactly ([#51](https://github.com/mtblck/reelwright/pull/51)).
 - Five looks: `poster` (capitals, a slab of colour, huge cropped scene numbers, hard cuts), `blueprint` (grid paper,
@@ -61,6 +65,8 @@ version with the date and bumps `plugin.json` to match.
 
 ### Changed
 
+- Captions in the vertical cut sit a little higher and narrower, clear of TikTok's caption and button rail
+  ([#52](https://github.com/mtblck/reelwright/pull/52)).
 - `kinetic` lines are sized to fit on one line, and a `stack` is laid out from its first frame, so earlier lines
   no longer jump up as each new one arrives ([#43](https://github.com/mtblck/reelwright/pull/43)).
 - Transitions have two sides: the scene going out can move too, not only the one coming in. Each way in is one
