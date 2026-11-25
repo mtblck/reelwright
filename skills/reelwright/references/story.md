@@ -167,7 +167,7 @@ A borrowing note for a fast, dark launch film with hard cuts and a grainy grade:
 > of its footage, logos, words or music: the screens, lines and colours all come from your project.
 
 Borrow the style, never the material: no frames, footage, logos, text, music or people from the reference, and
-no brand colours or fonts that aren't the project's. `build.mjs` refuses a story that points into `reference/`.
+no brand colours or fonts that aren't the project's. `build.mjs` refuses any file that comes from `reference/`, by path, through a brand file or through a link.
 
 ## Templates
 

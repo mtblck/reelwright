@@ -13,8 +13,15 @@ import path from 'node:path';
 const [src, run] = process.argv.slice(2);
 if (!src || !run) { console.error('usage: node reference.mjs <video file | http(s) url> <run_dir>'); process.exit(1); }
 const dir = path.join(run, 'reference');
-fs.rmSync(dir, {recursive: true, force: true});
 fs.mkdirSync(dir, {recursive: true});
+// clear what an earlier run wrote, but not a download being measured again (reference/source.mp4)
+for (const f of fs.readdirSync(dir)) if (/^(s\d+\.png|page-\d+\.png|sheet\.png|reference\.json|download)$/.test(f)) fs.rmSync(path.join(dir, f), {force: true});
+// video sites send a player page, not the video: screenshots of it would be the site's look, not the reference's
+const SITES = /(^|\.)(youtube\.com|youtu\.be|vimeo\.com|tiktok\.com|instagram\.com|facebook\.com|fb\.watch|x\.com|twitter\.com|loom\.com|dailymotion\.com|twitch\.tv|linkedin\.com)$/i;
+if (/^https?:\/\//.test(src) && SITES.test(new URL(src).hostname)) {
+  console.error(`! ${new URL(src).hostname} doesn't hand over the video file. Ask for the file itself (downloaded, or the original export) and give me its path.`);
+  process.exit(1);
+}
 const MAX_BYTES = 300 * 1024 * 1024; // a reference is a short video; refuse anything feature length
 const MAX_SECS = 180; // only the first three minutes are measured
 const MAX_STILLS = 24;
@@ -29,14 +36,16 @@ if (/^https?:\/\//.test(src)) {
   const tmp = path.join(dir, 'download');
   let type, final;
   try {
-    [type, final] = execFileSync('curl', ['-fsSL', '--retry', '2', '--proto', '=http,https', '--proto-redir', '=http,https', '--max-filesize', String(MAX_BYTES), '-o', tmp, '-w', '%{content_type}\n%{url_effective}', src], {encoding: 'utf8'}).split('\n');
+    [type, final] = execFileSync('curl', ['-fsSL', '--retry', '2', '--proto', '=http,https', '--proto-redir', '=http,https', '--max-filesize', String(MAX_BYTES), '--max-time', '600', '-o', tmp, '-w', '%{content_type}\n%{url_effective}', src], {encoding: 'utf8'}).split('\n');
   } catch (e) {
     fs.rmSync(tmp, {force: true});
     console.error(e.status === 63 ? '! that video is over 300 MB; trim it or give me a shorter cut' : `! couldn't fetch ${src}: ${String(e.stderr ?? e.message).trim()}`);
     process.exit(1);
   }
+  if (fs.statSync(tmp).size > MAX_BYTES) { fs.rmSync(tmp, {force: true}); console.error('! that video is over 300 MB; trim it or give me a shorter cut'); process.exit(1); }
   const ext = new URL(final || src).pathname.match(/\.(mp4|m4v|mov|webm|mkv)$/i)?.[1]?.toLowerCase();
   if (/^video\//.test(type) || ext) {
+    for (const f of fs.readdirSync(dir)) if (/^source\./.test(f)) fs.rmSync(path.join(dir, f), {force: true});
     file = path.join(dir, `source.${ext ?? (type.includes('webm') ? 'webm' : type.includes('quicktime') ? 'mov' : 'mp4')}`);
     fs.renameSync(tmp, file);
   } else if (/html/.test(type)) {
@@ -89,20 +98,20 @@ if (page) {
 // ---- a video: shots, pace, tone, motion -----------------------------------------------------------------------------
 let info;
 try {
-  info = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=format_name,duration:stream=codec_type,width,height,avg_frame_rate', '-of', 'json', file], {encoding: 'utf8'}));
+  info = JSON.parse(execFileSync('ffprobe', ['-v', 'error', '-show_entries', 'format=format_name,duration:stream=codec_type,width,height,avg_frame_rate,duration', '-of', 'json', file], {encoding: 'utf8'}));
 } catch { console.error(`! ffmpeg can't read ${src} as a video`); process.exit(1); }
 // a playlist or concat list can point at other files; only take a plain video
 if (/hls|concat|m3u|dash|image2/.test(info.format?.format_name ?? '')) { console.error('! that is a playlist, not a video file; give me the video itself'); process.exit(1); }
 const vs = (info.streams ?? []).find((s) => s.codec_type === 'video');
 if (!vs) { console.error(`! ${src} has no video in it`); process.exit(1); }
-let duration = Number(info.format.duration);
-if (!(duration > 0)) { console.error(`! couldn't tell how long ${src} is`); process.exit(1); }
+// recordings from a browser often carry no length; the frames tell it then
+let duration = [info.format.duration, vs.duration].map(Number).find((d) => d > 0) ?? Infinity;
 const [fn, fd] = vs.avg_frame_rate.split('/').map(Number);
 const fps = fd ? fn / fd : 30;
 let span = Math.min(duration, MAX_SECS);
 
 // every frame's change from the last (0 to 1), and its brightness and saturation, at a small size
-const lines = ff('-t', String(span), '-i', file, '-an', '-vf', 'scale=320:-2,signalstats,select=gte(scene\\,0),metadata=print:file=-', '-f', 'null', '-');
+const lines = ff('-t', String(span), '-i', file, '-an', '-vf', 'scale=320:-2,format=yuv420p,signalstats,select=gte(scene\\,0),metadata=print:file=-', '-f', 'null', '-');
 const frames = [];
 for (const l of lines.split('\n')) {
   const t = l.match(/pts_time:([\d.]+)/);
@@ -113,7 +122,8 @@ for (const l of lines.split('\n')) {
 }
 if (frames.length < 2) { console.error(`! couldn't read frames from ${src}`); process.exit(1); }
 span = Math.min(span, frames[frames.length - 1].t + 1 / fps); // the picture can end before the sound
-if (duration <= MAX_SECS) duration = span;
+const capped = duration > MAX_SECS && span >= MAX_SECS - 0.5;
+if (!capped) duration = span;
 
 // a hard cut is a big jump between two frames; two within a quarter second are one cut with a flash in it.
 // A move (slide, push, wipe, dissolve) spreads its change over several frames, so it shows up as a jump only
@@ -185,13 +195,13 @@ const suggest = {
   ways: {cuts: 'Hard cuts between shots: the cut way in, or glitch for a jolt.', moves: 'Shots slide, push or dissolve into each other: slide, push, whip, zoom or fade, more than cut.', both: 'A mix of hard cuts and moves: cut inside a section, slide or push between sections.'}[ways] ?? null,
   dips: dips >= 2 ? 'It dips through black between sections: use the fade way in at those turns.' : null,
 };
-const out = {source: src, kind: 'video', duration: r1(duration), measured: r1(span), size: [vs.width, vs.height], fps: r1(fps),
-  cuts: cuts.length, hardCuts: hard.length, ways, cutsPerMinute: r1((cuts.length / span) * 60), shotLength: {median: r1(median), shortest: r1(lens[0]), longest: r1(lens[lens.length - 1])},
+const out = {source: src, kind: 'video', duration: isFinite(duration) ? r1(duration) : null, measured: r1(span), size: [vs.width, vs.height], fps: r1(fps),
+  cuts: cuts.length, hardCuts: cuts.filter((c) => c.hard).length, ways, cutsPerMinute: r1((cuts.length / span) * 60), shotLength: {median: r1(median), shortest: r1(lens[0]), longest: r1(lens[lens.length - 1])},
   pace, tone, colour, motion: moving, dips, suggest, shots};
 fs.writeFileSync(path.join(dir, 'reference.json'), JSON.stringify(out, null, 1));
 
-console.log(`reference: ${r1(duration)} s, ${vs.width}x${vs.height}${duration > MAX_SECS ? ` (first ${MAX_SECS} s measured)` : ''}`);
-console.log(`  ${shots.length} shots, ${out.cutsPerMinute} changes a minute (${hard.length} hard cut${hard.length === 1 ? '' : 's'}), median ${out.shotLength.median} s (${out.shotLength.shortest} to ${out.shotLength.longest} s): ${pace}`);
+console.log(`reference: ${isFinite(duration) ? `${r1(duration)} s` : 'over 3 minutes'}, ${vs.width}x${vs.height}${capped ? ` (first ${MAX_SECS} s measured)` : ''}`);
+console.log(`  ${shots.length} shots, ${out.cutsPerMinute} changes a minute (${out.hardCuts} hard cut${out.hardCuts === 1 ? '' : 's'}), median ${out.shotLength.median} s (${out.shotLength.shortest} to ${out.shotLength.longest} s): ${pace}`);
 console.log(`  tone ${tone} (brightness ${Math.round(bright)}), colour ${colour} (saturation ${Math.round(sat)}), motion ${moving}${dips ? `, ${dips} dips to black` : ''}`);
 for (const v of Object.values(suggest)) if (v) console.log(`  - ${v}`);
 console.log(`  ${path.join(dir, 'sheet.png')}${labels ? '' : ' (no time labels: ffmpeg has no font)'}`);

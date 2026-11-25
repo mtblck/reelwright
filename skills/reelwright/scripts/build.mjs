@@ -33,13 +33,16 @@ const env = Object.fromEntries(
     .trim().split('\n').filter((l) => l.includes('=')).map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1)]),
 );
 const story = JSON.parse(fs.readFileSync(path.join(run, 'story.json'), 'utf8'));
-// reference/ (from reference.mjs) is someone else's video or page, there to look at: none of it goes into this one
-{
-  const ref = path.join(run, 'reference') + path.sep;
-  const walk = (v, at) => (typeof v === 'string' ? (path.resolve(run, v).startsWith(ref) ? [at] : []) : v && typeof v === 'object' ? Object.entries(v).flatMap(([k, x]) => walk(x, `${at}.${k}`)) : []);
-  const used = walk(story, 'story');
-  if (used.length) { console.error(`! ${used.join(', ')} points into reference/. The reference is only for borrowing a style: use the project's own screens, words and brand.`); process.exit(1); }
-}
+// reference/ (from reference.mjs) is someone else's video or page, there to look at: no file in it goes into this
+// one, however the story reaches it (a path, a brand file's logo, a symlink)
+const REF = fs.existsSync(path.join(run, 'reference')) ? fs.realpathSync.native(path.join(run, 'reference')) + path.sep : null;
+const own = (src) => {
+  if (REF && fs.existsSync(src) && (fs.realpathSync.native(src) + (fs.statSync(src).isDirectory() ? path.sep : '')).startsWith(REF)) {
+    console.error(`! ${path.relative(run, src)} comes from reference/. The reference is only for borrowing a style: use the project's own screens, words and brand.`);
+    process.exit(1);
+  }
+  return src;
+};
 // a short cut: scenes whose `keep` is at least this length (6 keeps a scene in the 6 s and 15 s cuts, 15 only in
 // the 15 s one). With no `keep` anywhere: the first and last scenes, plus the title for 15 s.
 const length = process.argv.includes('--length') ? Number(process.argv[process.argv.indexOf('--length') + 1]) : 0;
@@ -94,7 +97,7 @@ function loadBrand() {
 }
 // copy a file into <run>/public/<sub>/ and return its public path
 function copy(src, sub) {
-  if (!fs.existsSync(src)) throw new Error(`not found: ${src}`);
+  if (!fs.existsSync(own(src))) throw new Error(`not found: ${src}`);
   const rel = path.join(sub, path.basename(src));
   fs.mkdirSync(path.join(pub, sub), {recursive: true});
   if (path.resolve(src) !== path.join(pub, rel)) fs.copyFileSync(src, path.join(pub, rel));
@@ -174,7 +177,7 @@ if (!LANGS[lang]) throw new Error(`voice.lang "${lang}" is not one of ${Object.k
 const voiceName = v.voice ?? LANGS[lang][1];
 if (v.voice && v.lang && BY_LETTER[v.voice[0]] !== lang) console.error(`! voice ${v.voice} is a ${BY_LETTER[v.voice[0]] ?? 'different'} voice; it will read the ${lang} text with an accent. ${LANGS[lang][1]} is a ${lang} voice`);
 // voice.files: a folder of recordings, one per phrase, named <scene>-<phrase> from 1 (2-1.wav is scene 2's first phrase)
-const recs = v.files ? path.resolve(run, v.files) : null;
+const recs = v.files ? own(path.resolve(run, v.files)) : null;
 const recording = (i, j) => {
   for (const ext of ['wav', 'mp3', 'm4a', 'flac', 'ogg']) { const p = path.join(recs, `${i + 1}-${j + 1}.${ext}`); if (fs.existsSync(p)) return p; }
   return null;
@@ -270,14 +273,14 @@ const total = scenes.at(-1).start + scenes.at(-1).dur;
 // media used by scenes -> public/
 // terminal: a transcript recorded by term.mjs; code: lines read from a file in the repo
 for (const s of scenes) {
-  if (s.type === 'terminal' && s.props.transcript) Object.assign(s.props, JSON.parse(fs.readFileSync(path.resolve(run, s.props.transcript), 'utf8')), {...s.props, transcript: undefined});
+  if (s.type === 'terminal' && s.props.transcript) Object.assign(s.props, JSON.parse(fs.readFileSync(own(path.resolve(run, s.props.transcript)), 'utf8')), {...s.props, transcript: undefined});
   if (s.type === 'chart') {
     const d = s.props.data;
     if (!Array.isArray(d) || d.length < 2 || d.length > 8) throw new Error(`chart scene: data needs 2 to 8 {"label", "value"} points (has ${Array.isArray(d) ? d.length : 'none'})`);
     for (const p of d) if (typeof p.value === 'number' ? p.value < 0 : /(^|[^0-9])[-−]\s*[0-9.]/.test(String(p.value)) || !/[0-9]/.test(String(p.value))) throw new Error(`chart scene: "${p.label}" has value ${JSON.stringify(p.value)}; values are numbers of zero or more (bars start from zero), e.g. 12 or "1.3 s"`);
   }
   if (s.type === 'code' && s.props.file) {
-    const all = fs.readFileSync(path.resolve(run, s.props.file), 'utf8').split('\n');
+    const all = fs.readFileSync(own(path.resolve(run, s.props.file)), 'utf8').split('\n');
     const [a, z] = s.props.lines ?? [1, all.length];
     s.props.code = all.slice(a - 1, z).join('\n');
     s.props.lines = [a, z];
