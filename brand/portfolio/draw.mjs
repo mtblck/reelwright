@@ -3,7 +3,7 @@
 // Verb: Reelwright *cuts* a promo from a repo. Picture: an editing timeline on a
 // dark cutting mat, a film strip of the promo's scenes over a voice waveform and a
 // music track, with the three cuts it makes (tall, wide and the square in Tungsten)
-// framed around one scene on one centre. Front-on throughout. The three frames are
+// framed around one scene on one center. Front-on throughout. The three frames are
 // the mark's own idea, so the logo is part of the scene rather than a badge on it.
 //
 //   node draw.mjs        writes cover.svg and cover-mobile.svg next to this file
@@ -19,7 +19,7 @@ const C = { emulsion: '#0F4C4A', tungsten: '#D9661F', leader: '#F6F2EA', darkroo
 const r1 = (n) => Math.round(n * 10) / 10
 const box = (x, y, w, h, rx, fill, extra = '') => `<rect x="${r1(x)}" y="${r1(y)}" width="${r1(w)}" height="${r1(h)}" rx="${r1(rx)}" fill="${fill}"${extra}/>`
 
-/** What sits in one film-strip cell, centred on (x, y) at scale k. */
+/** What sits in one film-strip cell, centered on (x, y) at scale k. */
 const cells = {
   // An empty dark frame: the leader running off toward the edges.
   blank: () => '',
@@ -65,7 +65,7 @@ function waveform(x0, x1, y, k) {
 
 /**
  * The scene at width W (height 800), at scale k around (W / 2, cy).
- * `types` names the strip's cells from left to right, centred on the middle one.
+ * `types` names the strip's cells from left to right, centered on the middle one.
  */
 function scene(W, H, { k, cy, types, ruler = true, title }) {
   const cx = W / 2, edge = 96, parts = []
@@ -113,7 +113,7 @@ function scene(W, H, { k, cy, types, ruler = true, title }) {
   for (let x = cx - 28 * k; x >= edge; x -= 56 * k) ticks += `M${r1(x)} ${r1(ty + 10 * k)}V${r1(ty + 30 * k)}`
   for (let x = cx + 28 * k; x <= W - edge; x += 56 * k) ticks += `M${r1(x)} ${r1(ty + 10 * k)}V${r1(ty + 30 * k)}`
   parts.push(`<path d="${ticks}" stroke="${C.wash}" stroke-opacity="0.5" stroke-width="${r1(3 * k)}" fill="none"/>`)
-  // The cut: tall and wide frames in Leader, the square in Tungsten, on one centre, with crop marks.
+  // The cut: tall and wide frames in Leader, the square in Tungsten, on one center, with crop marks.
   parts.push(box(cx - 300 * k, cy + 268 * k, 600 * k, 24 * k, 12 * k, '#000', ' opacity="0.12"'))
   const frame = (w, h, rx, stroke, sw) => `<rect x="${r1(cx - (w * k) / 2)}" y="${r1(cy - (h * k) / 2)}" width="${r1(w * k)}" height="${r1(h * k)}" rx="${r1(rx * k)}" fill="none" stroke="${stroke}" stroke-width="${r1(sw * k)}"/>`
   parts.push(frame(292, 520, 18, C.leader, 16))
